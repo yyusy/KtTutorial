@@ -1,6 +1,6 @@
-fun main(args: Array<String>) {
+fun main() {
     val s: List<Int> =
-        System.`in`.bufferedReader().readLines().filter { it.isNotBlank() }.map { it.toInt() }.sorted();
+        System.`in`.bufferedReader().readLines().filter { it.isNotBlank() }.map { it.toInt() }.sorted()
     val ES = 2020
     var res: Pair<Int, Int>? = null
     for (i in 1..s.lastIndex) {
@@ -9,7 +9,7 @@ fun main(args: Array<String>) {
             if (s[j] + s[i] == ES) {
                 res = Pair(s[j], s[i])
                 break
-            } else if (s[j] + s[i] > ES) break;
+            } else if (s[j] + s[i] > ES) break
         }
         if (res != null) break
     }
