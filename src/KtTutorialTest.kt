@@ -48,7 +48,7 @@ internal class KtTutorialTest {
         )
         var pos = 0
         val r = str.groupingBy { s -> pos.also { if (s.isEmpty()) pos += 1 } }
-            .aggregate { key, accumulator: StringBuffer?, element, first ->
+            .aggregate { _, accumulator: StringBuffer?, element, first ->
                 if (first) StringBuffer().append(element) else accumulator!!.append(element)
             }.map { it.value }
         assertEquals(listOf("aaa", "bbbbbb"), r)
@@ -56,10 +56,26 @@ internal class KtTutorialTest {
     }
 
     @Test
-    fun testUnion()
-    {
-        assertEquals("bc".toSet(), "abc".toSet().intersect("bc".toSet()));
-        assertEquals(emptySet<Char>(), "abc".toSet().intersect("de".toSet()));
+    fun testUnion() {
+        assertEquals("bc".toSet(), "abc".toSet().intersect("bc".toSet()))
+        assertEquals(emptySet<Char>(), "abc".toSet().intersect("de".toSet()))
 
+    }
+
+    @Test
+    fun testInstructionLoop() {
+        val program =
+            listOf(
+                "nop +0".toInstruction(),
+                "acc +1".toInstruction(),
+                "jmp +4".toInstruction(),
+                "acc +3".toInstruction(),
+                "jmp -3".toInstruction(),
+                "acc -99".toInstruction(),
+                "acc +1".toInstruction(),
+                "jmp -4".toInstruction(),
+                "acc +6".toInstruction(),
+            )
+        assertEquals(8, findWayToEndGraph(program))
     }
 }
