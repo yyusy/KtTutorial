@@ -1,36 +1,56 @@
-data class Edge<V>(val vFrom: V, val vTo: V)
+class Edge<V>(val vFrom: Vertex<V>, val vTo: Vertex<V>) {
+    init {
+        vFrom.addEdge(this)
+        vTo.addEdge(this)
+    }
 
-data class Vertex<V>(val v: V) {
-    val outboundEdges = mutableListOf<Edge<Vertex<V>>>()
-    val inboundEdges = mutableListOf<Edge<Vertex<V>>>()
-    fun addEdge(e: Edge<Vertex<V>>) {
+    override fun toString(): String {
+        return "${vFrom.key.toString()}->${vTo.key.toString()}"
+    }
+}
+
+data class Vertex<V>(
+    val key: V
+) {
+    private val outboundEdges: MutableSet<Edge<V>> = mutableSetOf()
+    private val inboundEdges: MutableSet<Edge<V>> = mutableSetOf()
+
+    fun addEdge(e: Edge<V>) {
         when (this) {
             e.vFrom -> outboundEdges.add(e)
             e.vTo -> inboundEdges.add(e)
         }
     }
+
+    fun getEdges(backward : Boolean = false): Set<Edge<V>> = if (backward) inboundEdges else outboundEdges
 }
 
-data class Graph<V, D>(var vertices: MutableMap<V, Vertex<V>> = mutableMapOf<V, Vertex<V>>()) {
+data class Graph<V, D>(
+    var vertices: MutableMap<V, Vertex<V>> = mutableMapOf(),
+    val edges: MutableSet<Edge<V>> = mutableSetOf()
+) {
+    fun addVertex(vKey: V, vData: D? = null): Vertex<V> = vertices.computeIfAbsent(vKey) { Vertex(vKey) }
 
-    val edges = mutableListOf<Edge<Vertex<V>>>()
-    fun addVertex(vKey: V, vData: D? = null): Vertex<V> {
-        val x = Vertex(vKey)
-        vertices[vKey] = x
-        return x
+    operator fun get(key: V): Vertex<V>? = vertices[key]
+
+    fun addEdge(v1: V, v2: V): Boolean {
+        val x1 = vertices.getOrPut(v1) { Vertex(v1) }
+        val x2 = vertices.getOrPut(v2) { Vertex(v2) }
+        return edges.add(Edge(x1, x2))
     }
 
-    operator fun get(key: V): Vertex<V>? {
-        return vertices[key]
+    fun findWay(fromV: Vertex<V>, toV: Vertex<V>, backward: Boolean = false): List<Vertex<V>> =
+        findWay(fromV, toV, mutableSetOf(), backward)
+
+    fun findWay(fromV: Vertex<V>, toV: Vertex<V>, visited: MutableSet<Vertex<V>>, backward: Boolean = false): List<Vertex<V>> {
+        if (fromV == toV) return listOf(toV)
+        visited.add(fromV)
+        val x = fromV.getEdges(backward).map { if (backward) it.vFrom else it.vTo }.filter { it !in visited }.toSet()
+        for (v in x) {
+            val path = findWay(v, toV, visited, backward)
+            if (path.isNotEmpty()) return path + fromV
+        }
+        return emptyList()
     }
 
-    fun addEdge(v1: V, v2: V) {
-        val x1 = vertices[v1] ?: addVertex(v1)
-        val x2 = vertices[v2] ?: addVertex(v2)
-        val e = Edge(x1, x2)
-        edges.add(e)
-        x1.addEdge(e)
-        x2.addEdge(e)
-
-    }
 }

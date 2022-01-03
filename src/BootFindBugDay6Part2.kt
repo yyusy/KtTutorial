@@ -1,5 +1,4 @@
 fun List<Instruction>.execute(ctx: ExecutionCtx): Int {
-
     var address = ctx.getNextAddress()
     var deadlock = false
     try {
@@ -13,43 +12,54 @@ fun List<Instruction>.execute(ctx: ExecutionCtx): Int {
     println("Finished with ${if (deadlock) "deadlock" else ""} address: ${ctx.getNextAddress()} for range: ${this.indices}")
     return address
 }
-
-
-fun main() {
-    val program: List<Instruction> = System.`in`.bufferedReader().readLines().filter { it.isNotBlank() }
-        .map { it.toInstruction() }
-        .also { println(it) }
-    val startAddress = findWayToEnd(program)
-    println("Found way to finish starting with $startAddress")
-}
-
-fun findWayToEnd(program: List<Instruction>): Int {
-    val visited = sortedSetOf<Int>()
-    var startAddress = 0
-    val endOfProgram = program.size
-    while (startAddress in program.indices) {
-        val ctx = ExecutionCtx(startAddress)
-        if (program.execute(ctx) != endOfProgram) {
-            visited.addAll(ctx.trace.values)
-            visited.add(startAddress)
-            println("Visited : $visited")
-            startAddress = (program.indices).asSequence().minus(visited).minOrNull() ?: -1
-        } else {
-            break
-        }
-        println("Try next address : $startAddress")
-    }
-    return startAddress
-}
-
-fun findWayToEndGraph(program: List<Instruction>): Int {
-
+fun List<Instruction>.toGraph(): Graph<Int, Instruction> {
     val g = Graph<Int, Instruction>()
     // build graph
-    program.forEachIndexed { i, k ->
+    this.forEachIndexed { i, k ->
         val iTo = k.execute(ExecutionCtx(i))
         g.addEdge(i, iTo)
     }
+    return g
+}
+
+fun main() {
+    val program: MutableList<Instruction> = System.`in`.bufferedReader().readLines().filter { it.isNotBlank() }
+        .map { it.toInstruction() }.toMutableList()
+        .also { println(it) }
+
+    val address = findFixForProgram(program)
+    println("Fix address : $address ${program[address]}" )
+    program[address] =
+        program[address].copy(type = (if (program[address].type == InstructionType.NOP) InstructionType.JMP else InstructionType.NOP))
+    val ctx = ExecutionCtx(0, 0)
+    program.execute(ctx)
+    println("Executed :  $ctx")
+}
+
+
+fun findFixForProgram(program: List<Instruction>): Int {
+
+    val g = program.toGraph()
     println(g)
-    return 1
+
+    val forwardVisited = mutableSetOf<Vertex<Int>>()
+    g.findWay(g[0]!!, g[program.size]!!, forwardVisited, false)
+    println("fw visited :$forwardVisited")
+    val backwardVisited = mutableSetOf<Vertex<Int>>()
+    g.findWay(g[program.size]!!, g[0]!!, backwardVisited, true)
+    println("bk visited :$backwardVisited")
+    val jmpToChangeToNOP = forwardVisited
+        .filter { program[it.key].type == InstructionType.JMP }
+        .filter { jmp -> backwardVisited.any { it.key == jmp.key + 1 } }
+        .toSet()
+    println("jmpToChangeToNOP :$jmpToChangeToNOP")
+    val nopToChangeToJUMP = forwardVisited
+        .filter { program[it.key].type == InstructionType.NOP }
+        .filter { nop ->
+            backwardVisited.any { it.key == nop.key + program[nop.key].arg }
+        }
+        .toSet()
+    println("nopToChangeToJUMP :$nopToChangeToJUMP")
+    return (jmpToChangeToNOP.firstOrNull() ?: nopToChangeToJUMP.firstOrNull())!!.key
+
 }
