@@ -9,16 +9,12 @@ data class Edge<V, D>(val vFrom: Vertex<V, D>, val vTo: Vertex<V, D>, val weight
     }
 }
 
-class VertexWithData<V, D>(key: V, data: D) : Vertex<V, D>(key) {
-    init {
-        super.data = data // not in eqals or toString
-    }
-}
+class VertexWithData<V, D>(key: V, val data: D) : Vertex<V, D>(key)
 
-open class Vertex<V, D>(
+open class Vertex<V, D> (
     val key: V
 ) {
-    var data: D? = null // not in eqals or toString
+    //var data: D? = null // not in eqals or toString
     val outboundEdges: MutableSet<Edge<V, D>> = mutableSetOf()
     val inboundEdges: MutableSet<Edge<V, D>> = mutableSetOf()
 
@@ -110,9 +106,9 @@ data class Graph<V, D>(
     val leafs: Set<Vertex<V, D>>
         get() = (vertices.values - edges.map { it.vFrom }).toSet()
 
-    fun addVertex(vKey: V, vData: D? = null): Vertex<V, D> {
+    fun addVertex(vKey: V, vData: D): Vertex<V, D> {
         return vertices.getOrPut(vKey) {
-            Vertex<V, D>(vKey).apply { data = vData }
+            VertexWithData<V, D>(vKey, vData)
         }
     }
 
