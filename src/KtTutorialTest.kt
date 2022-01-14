@@ -55,7 +55,7 @@ internal class KtTutorialTest {
             bbb
             bbb
         """.trimIndent()
-        val r = str.lineSequence().map { it.split("\n").joinToString("") }
+        val r = str.splitToSequence(Regex("\n\\s*\n")).map { it.split("\n").joinToString("") }
         assertEquals(listOf("aaa", "bbbbbb"), r.toList())
     }
 
