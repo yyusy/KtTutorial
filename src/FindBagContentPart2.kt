@@ -1,4 +1,4 @@
-class CountBagsVisitor: Graph.GraphVisitor<String, List<BagRule>>() {
+class CountBagsVisitor: GraphVisitor<String, List<BagRule>>() {
     var bagsContent = mutableMapOf<String, Int>()
     override fun onReturnFromChild(
         parent: Vertex<String, List<BagRule>>,

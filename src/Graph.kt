@@ -9,14 +9,20 @@ data class Edge<V, D>(val vFrom: Vertex<V, D>, val vTo: Vertex<V, D>, val weight
     }
 }
 
-data class Vertex<V, D>(
+class VertexWithData<V, D>(key: V, data: D) : Vertex<V, D>(key) {
+    init {
+        super.data = data // not in eqals or toString
+    }
+}
+
+open class Vertex<V, D>(
     val key: V
 ) {
     var data: D? = null // not in eqals or toString
     val outboundEdges: MutableSet<Edge<V, D>> = mutableSetOf()
     val inboundEdges: MutableSet<Edge<V, D>> = mutableSetOf()
 
-    fun addEdge(e: Edge<V, D>) {
+    internal fun addEdge(e: Edge<V, D>) {
         when (this) {
             e.vFrom -> outboundEdges.add(e)
             e.vTo -> inboundEdges.add(e)
@@ -24,9 +30,28 @@ data class Vertex<V, D>(
     }
 
     fun getEdges(backward: Boolean = false): Set<Edge<V, D>> = if (backward) inboundEdges else outboundEdges
+
+    override fun toString(): String {
+        return "Vertex(key=$key, ${if (outboundEdges.isNotEmpty()) "out=" + outboundEdges else ""}, inboundEdges=$inboundEdges)"
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Vertex<*, *>
+
+        if (key != other.key) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return key?.hashCode() ?: 0
+    }
 }
 
-class FindPathVisitor<V, D>(var toV: Vertex<V, D>, backward: Boolean = false) : Graph.GraphVisitor<V, D>(backward) {
+class FindPathVisitor<V, D>(var toV: Vertex<V, D>, backward: Boolean = false) : GraphVisitor<V, D>(backward) {
     val path = mutableListOf<Vertex<V, D>>()
     private var found = false
     override fun onVisit(v: Vertex<V, D>, edge: Edge<V, D>?): Boolean {
@@ -72,6 +97,11 @@ interface IGraphVisitor<V, D> {
             .toSet()
 }
 
+abstract class GraphVisitor<V, D>(override var backward: Boolean = false) : IGraphVisitor<V, D> {
+    override val visited = mutableSetOf<Vertex<V, D>>()
+    override val visitedEdges = mutableSetOf<Edge<V, D>>()
+}
+
 data class Graph<V, D>(
     var vertices: MutableMap<V, Vertex<V, D>> = mutableMapOf(),
     val edges: MutableSet<Edge<V, D>> = mutableSetOf()
@@ -89,12 +119,7 @@ data class Graph<V, D>(
     operator fun get(key: V): Vertex<V, D> = vertices[key]!!
 
 
-    abstract class GraphVisitor<V, D>(override var backward: Boolean = false) : IGraphVisitor<V, D> {
-        override val visited = mutableSetOf<Vertex<V, D>>()
-        override val visitedEdges = mutableSetOf<Edge<V, D>>()
-    }
-
-    fun addEdge(v1: V, v2: V, weight: Int? = null): Boolean {
+    fun connect(v1: V, v2: V, weight: Int? = null): Boolean {
         val x1 = vertices.getOrPut(v1) { Vertex(v1) }
         val x2 = vertices.getOrPut(v2) { Vertex(v2) }
         return edges.add(Edge(x1, x2, weight))

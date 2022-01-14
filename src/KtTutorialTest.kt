@@ -1,5 +1,5 @@
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 const val BAG_RULES = """
@@ -55,7 +55,7 @@ internal class KtTutorialTest {
             bbb
             bbb
         """.trimIndent()
-        val r = str.splitToSequence(Regex("\n\\s*\n")).map { it.split("\n").joinToString("") }
+        val r = str.lineSequence().map { it.split("\n").joinToString("") }
         assertEquals(listOf("aaa", "bbbbbb"), r.toList())
     }
 
@@ -94,12 +94,11 @@ internal class KtTutorialTest {
     @Test
     fun testProgramPath() {
         val program = program()
-        //assertEquals(8, findWayToInstruction(program, 8, 9))
-
+        assertEquals(8, findWayToInstruction(program, 8, 9))
         val r = findWayToInstruction(program, 0, 9)
         assertEquals(-1, r)
-        //assertEquals(0, findWayToInstruction(program, 0, 7))
-        //assertEquals(-1, findWayToInstruction(program, 9, 0, true))
+        assertEquals(0, findWayToInstruction(program, 0, 7))
+        assertEquals(-1, findWayToInstruction(program, 9, 0, true))
 
     }
 
@@ -160,7 +159,7 @@ internal class KtTutorialTest {
         assertEquals(7, ctx.visited.size)
         val content = ctx.visited.map { it.key }.filter { it != shinyGoldBag }.distinct()
         assertEquals(6, content.count())
-        println( ctx.bagsContent[shinyGoldBag] )
+        println(ctx.bagsContent[shinyGoldBag])
     }
 
     @Test
@@ -176,6 +175,7 @@ internal class KtTutorialTest {
         assertEquals(4, ctx.visited.map { it.key }.filter { it != fromBag }.distinct().count())
     }
 
+
     @Test
     fun testRegexp() {
         val ruleRegexp = "(\\d+) ([\\w\\s]+) bags?".toRegex()
@@ -186,6 +186,46 @@ internal class KtTutorialTest {
 
     }
 
+    @OptIn(ExperimentalStdlibApi::class)
+    @Test
+    fun testDay9() {
+        val windowSize = 5
+        val inStr = """
+            35
+            20
+            15
+            25
+            47
+            40
+            62
+            55
+            65
+            95
+            102
+            117
+            150
+            182
+            127
+            219
+            299
+            277
+            309
+            576
+            """.trimIndent()
+        inStr.lineSequence().map { it.toInt() }.windowed(windowSize + 1) { l ->
+            l.last().takeIf { l.take(windowSize).toPairs().count { it.first + it.second == l.last() } > 0 }
+        }.filterNotNull().forEach { println(it) }
+    }
+
+    @ExperimentalStdlibApi
+    @Test
+    fun testListToPairs() {
+        val l = listOf(1, 2, 3, 4, 5)
+        val lp = l.toPairs()
+        assertEquals(4 + 3 + 2 + 1, lp.size)
+        assertEquals(4 + 3 + 2 + 1, lp.toSet().size)
+        println(lp)
+    }
 
     private fun program(): List<Instruction> {
         return listOf(

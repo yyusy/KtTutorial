@@ -15,7 +15,7 @@ fun List<Instruction>.execute(ctx: ExecutionCtx): Int {
 
 fun List<Instruction>.toGraph(): Graph<Int, Instruction> = Graph<Int, Instruction>().also {
     this.forEachIndexed { i, k ->
-        it.addEdge(i, k.execute(ExecutionCtx(i)))
+        it.connect(i, k.execute(ExecutionCtx(i)))
     }
 }
 

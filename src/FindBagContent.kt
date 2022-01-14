@@ -11,7 +11,7 @@ fun Map<String, List<BagRule>>.toGraph(): Graph<String, List<BagRule>> {
     }
     this.forEach { bagName, bagContent ->
         for (cBag in bagContent) {
-            g.addEdge(bagName, cBag.bagName, cBag.count)
+            g.connect(bagName, cBag.bagName, cBag.count)
         }
     }
     return g
