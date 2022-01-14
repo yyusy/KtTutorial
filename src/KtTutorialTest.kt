@@ -13,7 +13,7 @@ const val BAG_RULES = """
                 faded blue bags contain no other bags.
                 dotted black bags contain no other bags.
                 """
-const val BAG_RULES_CONTAIN= """
+const val BAG_RULES_CONTAIN = """
     shiny gold bags contain 2 dark red bags.
     dark red bags contain 2 dark orange bags.
     dark orange bags contain 2 dark yellow bags.
@@ -25,7 +25,7 @@ const val BAG_RULES_CONTAIN= """
 
 internal class KtTutorialTest {
 
-    @org.junit.jupiter.api.Test
+    @Test
     fun testFindRow() {
 
         assertEquals(1, (0 + 1 + 1) / 2)
@@ -94,10 +94,12 @@ internal class KtTutorialTest {
     @Test
     fun testProgramPath() {
         val program = program()
-        assertEquals(8, findWayToInstruction(program, 8, 9))
-        assertEquals(-1, findWayToInstruction(program, 0, 9))
-        assertEquals(0, findWayToInstruction(program, 0, 7))
-        assertEquals(-1, findWayToInstruction(program, 9, 0, true))
+        //assertEquals(8, findWayToInstruction(program, 8, 9))
+
+        val r = findWayToInstruction(program, 0, 9)
+        assertEquals(-1, r)
+        //assertEquals(0, findWayToInstruction(program, 0, 7))
+        //assertEquals(-1, findWayToInstruction(program, 9, 0, true))
 
     }
 
@@ -112,7 +114,7 @@ internal class KtTutorialTest {
 
     @Test
     fun testBags() {
-        val rulesString = BAG_RULES
+        val rulesString = BAG_RULES.trimIndent()
 
         val rules = rulesString.splitToSequence("\n").associate { it.toBagRule() }
 
@@ -121,9 +123,9 @@ internal class KtTutorialTest {
         assertEquals(0, rules["dotted black"]!!.size)
         assertEquals(2, rules["light red"]!!.size)
         assertEquals(1, rules["bright white"]!!.size)
-        assertEquals(1, rules["bright white"]!![0].second)
-        assertEquals(9, rules["muted yellow"]!![1].second)
-        assertEquals("faded blue", rules["muted yellow"]!![1].first)
+        assertEquals(1, rules["bright white"]!![0].count)
+        assertEquals(9, rules["muted yellow"]!![1].count)
+        assertEquals("faded blue", rules["muted yellow"]!![1].bagName)
     }
 
 
@@ -132,38 +134,46 @@ internal class KtTutorialTest {
         val rules = BAG_RULES.trimIndent().lines().associate { it.toBagRule() }
         val g = rules.toGraph()
         println(g)
-
+        assertEquals(2, g.leafs.size)
         val fromBag = "shiny gold"
         rules.filter { it.key != fromBag }.count {
-            val p = g.findWay(g[fromBag]!!, g[it.key]!!, true)
+            val p = FindPathVisitor(g[it.key], true).let {
+                g.walk(g[fromBag], null, it)
+                it.path
+            }
             println("$fromBag -> ${it.key} : $p")
-            p?.isNotEmpty() ?: false
+            p.isNotEmpty()
         }.also { println(it) }
+
     }
+
     @Test
     fun testBagsContained() {
         val rules = BAG_RULES_CONTAIN.trimIndent().lines().associate { it.toBagRule() }
         val g = rules.toGraph()
+
         println(g)
-        val bag = "shiny gold"
-        val visited = mutableSetOf<Vertex<String>>()
-        val p = g.findWay(g[bag]!!, Vertex("non-reachable"), visited)
-        assertTrue(p.isEmpty())
-        val content = visited.map { it.key }.filter{ it != bag }.distinct()
+        assertEquals(1, g.leafs.size)
+        val shinyGoldBag = "shiny gold"
+        val ctx = CountBagsVisitor()
+        g.walk(g[shinyGoldBag], null, ctx)
+        assertEquals(7, ctx.visited.size)
+        val content = ctx.visited.map { it.key }.filter { it != shinyGoldBag }.distinct()
         assertEquals(6, content.count())
-        TODO("Implement tree and aggregate on the path back")
+        println( ctx.bagsContent[shinyGoldBag] )
     }
+
     @Test
     fun testBagsGraphVisited() {
         val rules = BAG_RULES.trimIndent().lines().associate { it.toBagRule() }
         val g = rules.toGraph()
         println(g)
-
         val fromBag = "shiny gold"
-        val visited = mutableSetOf<Vertex<String>>()
-        val p = g.findWay(g[fromBag]!!, Vertex("non-reachable"), visited, true)
+        val ctx = FindPathVisitor<String, List<BagRule>>(Vertex("non-reachable"), true)
+        g.walk(g[fromBag], null, ctx)
+        val p = ctx.path
         assertTrue(p.isEmpty())
-        assertEquals(4, visited.map { it.key }.filter{ it != fromBag }.distinct().count())
+        assertEquals(4, ctx.visited.map { it.key }.filter { it != fromBag }.distinct().count())
     }
 
     @Test
@@ -179,16 +189,16 @@ internal class KtTutorialTest {
 
     private fun program(): List<Instruction> {
         return listOf(
-                "nop +0".toInstruction(),
-                "acc +1".toInstruction(),
-                "jmp +4".toInstruction(),
-                "acc +3".toInstruction(),
-                "jmp -3".toInstruction(),
-                "acc -99".toInstruction(),
-                "acc +1".toInstruction(),
-                "jmp -4".toInstruction(),
-                "acc +6".toInstruction(),
-            )
+            "nop +0".toInstruction(),
+            "acc +1".toInstruction(),
+            "jmp +4".toInstruction(),
+            "acc +3".toInstruction(),
+            "jmp -3".toInstruction(),
+            "acc -99".toInstruction(),
+            "acc +1".toInstruction(),
+            "jmp -4".toInstruction(),
+            "acc +6".toInstruction(),
+        )
 
     }
 }
@@ -215,8 +225,10 @@ fun findWayToEnd(program: List<Instruction>): Int {
 fun findWayToInstruction(program: List<Instruction>, start: Int, end: Int, backward: Boolean = false): Int {
     val g = program.toGraph()
     println(g)
-    val v = mutableSetOf<Vertex<Int>>()
-    val r = g.findWay(g[start]!!, g[end]!!, v, backward)
-    println("Path: $r, visited :$v")
+    val r = FindPathVisitor(g[end], backward).let {
+        g.walk(g[start], null, it)
+        it.path
+    }
+    println("Path: $r")
     return r.minOfOrNull { it.key } ?: -1
 }
