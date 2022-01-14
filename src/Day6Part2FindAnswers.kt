@@ -2,6 +2,9 @@ import java.io.File
 import kotlin.test.assertEquals
 
 fun main() {
+    Day6Part2FindAnswers()
+}
+fun Day6Part2FindAnswers() {
 
     val r = File("Day6Input.txt").useLines { l ->
         var i = 0

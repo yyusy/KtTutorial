@@ -1,8 +1,4 @@
-import kotlin.test.assertTrue
-
-data class BagRule( val bagName : String, val count : Int)
-typealias  BagRules = Pair<String, List<BagRule>>
-
+data class BagRule(val bagName: String, val count: Int)typealias  BagRules = Pair<String, List<BagRule>>
 
 fun Map<String, List<BagRule>>.toGraph(): Graph<String, List<BagRule>> {
     val g = Graph<String, List<BagRule>>()
@@ -26,19 +22,5 @@ fun String.toBagRule(): BagRules {
     return name to ruleRegexp.findAll(ruleString)
         .map { BagRule(it.destructured.component2(), it.destructured.component1().toInt()) }
         .toList()
-
-}
-
-fun main() {
-    val rules = System.`in`.bufferedReader().useLines {  it.associate { it.toBagRule() } }
-    val g = rules.toGraph()
-    println(g)
-
-    val FROM_BAG = "shiny gold"
-
-    val visited = mutableSetOf<Vertex<String, List<BagRule>>>()
-    var p = g.findPath(g[FROM_BAG], Vertex("non-existing"), visited, true)
-    assertTrue (p.isEmpty() )
-    println(visited.map { it.key }.filter() { it != FROM_BAG }.distinct().count())
 
 }

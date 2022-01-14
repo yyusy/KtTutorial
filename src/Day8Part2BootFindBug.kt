@@ -1,29 +1,15 @@
-fun List<Instruction>.execute(ctx: ExecutionCtx): Int {
-    var address = ctx.getNextAddress()
-    var deadlock = false
-    try {
-        while (address in this.indices) {
-            address = this[address].execute(ctx)
-        }
-    } catch (x: ExecutionDeadlockException) {
-        println(x)
-        deadlock = true
-    }
-    println("Finished with ${if (deadlock) "deadlock" else ""} address: ${ctx.getNextAddress()} for range: ${this.indices}")
-    return address
-}
-
-fun List<Instruction>.toGraph(): Graph<Int, Instruction> = Graph<Int, Instruction>().also {
-    this.forEachIndexed { i, k ->
-        it.connect(i, k.execute(ExecutionCtx(i)))
-    }
-}
-
+import java.io.File
+import kotlin.test.assertEquals
 
 fun main() {
-    val program: MutableList<Instruction> = System.`in`.bufferedReader().readLines().filter { it.isNotBlank() }
-        .map { it.toInstruction() }.toMutableList()
-        .also { println(it) }
+    Day8Part2BootFindBug()
+}
+
+fun Day8Part2BootFindBug() {
+    val program = File("Day8Input.txt").useLines {
+        it.filter { it.isNotBlank() }
+            .map { it.toInstruction() }.toMutableList()
+    }.also { println(it) }
 
     val address = findFixForProgram(program)
     println("Fix address : $address ${program[address]}")
@@ -31,7 +17,8 @@ fun main() {
         program[address].copy(type = (if (program[address].type == InstructionType.NOP) InstructionType.JMP else InstructionType.NOP))
     val ctx = ExecutionCtx(0, 0)
     program.execute(ctx)
-    println("Executed :  $ctx")
+    println(ctx)
+    assertEquals(758, ctx.accumulator)
 }
 
 
@@ -40,10 +27,10 @@ fun findFixForProgram(program: List<Instruction>): Int {
     val g = program.toGraph()
     println(g)
 
-    val forwardVisited = mutableSetOf<Vertex<Int, Instruction>>()
+    val forwardVisited = mutableSetOf<Vertex<Int>>()
     g.findPath(g[0], g[program.size], forwardVisited, false)
     println("fw visited :$forwardVisited")
-    val backwardVisited = mutableSetOf<Vertex<Int, Instruction>>()
+    val backwardVisited = mutableSetOf<Vertex<Int>>()
     g.findPath(g[program.size], g[0], backwardVisited, true)
     println("bk visited :$backwardVisited")
     val jmpToChangeToNOP = forwardVisited

@@ -17,7 +17,6 @@ enum class InstructionType {
 }
 
 class ExecutionDeadlockException(val address: Int, desc: String) : Throwable(desc)
-
 data class ExecutionCtx(private var address: Int, var accumulator: Int = 0) {
     val trace = mutableMapOf<Int, Int>()
     var deadLockAddress: Int? = null
@@ -40,15 +39,23 @@ data class Instruction(val type: InstructionType, val arg: Int) {
 fun String.toInstruction() =
     this.split(" ").let { (k, v) -> Instruction(InstructionType.valueOf(k.uppercase()), v.toInt()) }
 
-fun main() {
-    val program: List<Instruction> = System.`in`.bufferedReader().readLines().filter { it.isNotBlank() }
-        .map { it.split(" ").let { (k, v) -> Instruction(InstructionType.valueOf(k.uppercase()), v.toInt()) } }
-        .also { println(it) }
-    var address = 0
-    val ctx = ExecutionCtx(address, 0)
-    while (address in program.indices) {
-        address = program[address].execute(ctx)
+fun List<Instruction>.execute(ctx: ExecutionCtx): Int {
+    var address = ctx.getNextAddress()
+    var deadlock = false
+    try {
+        while (address in this.indices) {
+            address = this[address].execute(ctx)
+        }
+    } catch (x: ExecutionDeadlockException) {
+        println(x)
+        deadlock = true
     }
-    println("Finished with address: $address for range: ${program.indices}")
+    println("Finished with ${if (deadlock) "deadlock" else ""} address: ${ctx.getNextAddress()} for range: ${this.indices}")
+    return address
 }
 
+fun List<Instruction>.toGraph(): Graph<Int, Instruction> = Graph<Int, Instruction>().also {
+    this.forEachIndexed { i, k ->
+        it.connect(i, k.execute(ExecutionCtx(i)))
+    }
+}

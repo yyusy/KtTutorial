@@ -168,7 +168,7 @@ internal class KtTutorialTest {
         val g = rules.toGraph()
         println(g)
         val fromBag = "shiny gold"
-        val ctx = FindPathVisitor<String, List<BagRule>>(Vertex("non-reachable"), true)
+        val ctx = FindPathVisitor(Vertex("non-reachable"), true)
         g.walk(g[fromBag], null, ctx)
         val p = ctx.path
         assertTrue(p.isEmpty())
