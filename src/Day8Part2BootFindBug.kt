@@ -26,12 +26,9 @@ fun findFixForProgram(program: List<Instruction>): Int {
 
     val g = program.toGraph()
     println(g)
-
-    val forwardVisited = mutableSetOf<Vertex<Int>>()
-    g.findPath(g[0], g[program.size], forwardVisited, false)
+    val forwardVisited = g.findPathResult(g[0], g[program.size], false).visited
     println("fw visited :$forwardVisited")
-    val backwardVisited = mutableSetOf<Vertex<Int>>()
-    g.findPath(g[program.size], g[0], backwardVisited, true)
+    val backwardVisited = g.findPathResult(g[program.size], g[0], true).visited
     println("bk visited :$backwardVisited")
     val jmpToChangeToNOP = forwardVisited
         .filter { program[it.key].type == InstructionType.JMP }

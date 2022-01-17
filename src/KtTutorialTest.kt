@@ -135,15 +135,12 @@ internal class KtTutorialTest {
         println(g)
         assertEquals(2, g.leafs.size)
         val fromBag = "shiny gold"
-        rules.filter { it.key != fromBag }.count {
-            val p = FindPathVisitor(g[it.key], true).let {
-                g.walk(g[fromBag], null, it)
-                it.path
-            }
-            println("$fromBag -> ${it.key} : $p")
-            p.isNotEmpty()
+        val countPaths = rules.filter { it.key != fromBag }.count {
+            val path = g.findPath(g[fromBag],g[it.key], true)
+            println("$fromBag -> ${it.key} : ${path}")
+            path.isNotEmpty()
         }.also { println(it) }
-
+        assertEquals(4, countPaths)
     }
 
     @Test
@@ -154,12 +151,17 @@ internal class KtTutorialTest {
         println(g)
         assertEquals(1, g.leafs.size)
         val shinyGoldBag = "shiny gold"
-        val ctx = CountBagsVisitor()
-        g.walk(g[shinyGoldBag], null, ctx)
+        val bagsContent = mutableMapOf<String, Int>()
+        val ctx = g.walk(start = g[shinyGoldBag]) { edge ->
+            val bagsInChild = bagsContent.getOrDefault(edge.vTo.key, 0)
+            val bagsInParent = bagsContent.getOrDefault(edge.vFrom.key, 0)
+            bagsContent[edge.vFrom.key] = bagsInParent + edge.weight!! * (bagsInChild + 1)
+            println("$edge : child= $bagsInChild, total =${bagsContent[edge.vFrom.key]}")
+        }
         assertEquals(7, ctx.visited.size)
         val content = ctx.visited.map { it.key }.filter { it != shinyGoldBag }.distinct()
         assertEquals(6, content.count())
-        println(ctx.bagsContent[shinyGoldBag])
+        println(bagsContent[shinyGoldBag])
     }
 
     @Test
@@ -168,10 +170,7 @@ internal class KtTutorialTest {
         val g = rules.toGraph()
         println(g)
         val fromBag = "shiny gold"
-        val ctx = FindPathVisitor(Vertex("non-reachable"), true)
-        g.walk(g[fromBag], null, ctx)
-        val p = ctx.path
-        assertTrue(p.isEmpty())
+        val ctx = g.walkBack(g[fromBag]) {}
         assertEquals(4, ctx.visited.map { it.key }.filter { it != fromBag }.distinct().count())
     }
 
@@ -265,10 +264,13 @@ fun findWayToEnd(program: List<Instruction>): Int {
 fun findWayToInstruction(program: List<Instruction>, start: Int, end: Int, backward: Boolean = false): Int {
     val g = program.toGraph()
     println(g)
+    /*
     val r = FindPathVisitor(g[end], backward).let {
         g.walk(g[start], null, it)
         it.path
     }
+     */
+    val r = g.findPath(g[start],g[end], backward)
     println("Path: $r")
     return r.minOfOrNull { it.key } ?: -1
 }
