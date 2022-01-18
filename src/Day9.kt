@@ -1,8 +1,11 @@
 import java.io.File
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalStdlibApi::class)
 fun main() {
+    Day9()
+}
+@OptIn(ExperimentalStdlibApi::class)
+fun Day9() {
     val windowSize = 25
     val res = File("Day9Input.txt").useLines {
         findInvalidNumber(it, windowSize)

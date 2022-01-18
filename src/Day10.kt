@@ -2,6 +2,9 @@ import java.io.File
 import kotlin.test.assertEquals
 
 fun main() {
+    Day10()
+}
+fun Day10() {
     val max = File("Day10Input.txt").useLines { l ->
         l.filter { it.isNotBlank() }
             .map { it.toInt() }
