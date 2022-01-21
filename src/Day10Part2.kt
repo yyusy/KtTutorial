@@ -20,15 +20,15 @@ fun day10Part2() {
     }
 }
 
-fun Sequence<Int>.toWiredAdaptersGraph(): GraphWeightedWithData<Int, Int> {
-    val g = GraphWeightedWithData<Int, Int>()
+fun Sequence<Int>.toWiredAdaptersGraph(): GraphWeighted<Int> {
+    val g = GraphWeighted<Int>()
     this.sorted()
         .windowed(4, 1, true)
         .forEach {
             val from = it.first()
             for (to in it.takeLast(it.size - 1)) {
                 if (to - from <= 3)
-                    g.connect(g.vertex(from, -1), g.vertex(to, -1), to - from)
+                    g.connect(from, to, to - from)
             }
         }
     return g

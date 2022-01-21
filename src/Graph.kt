@@ -28,12 +28,6 @@ open class Edge<V> constructor(open val vFrom: Vertex<V>, open val vTo: Vertex<V
     }
 }
 
-class VertexWithData<V, D>(key: V, data: D) : Vertex<V>(key, data) {
-    fun getD(): D = data as D
-    fun setD(d: D) {
-        data = d
-    }
-}
 open class Vertex<V>(
     val key: V,
     var data: Any? = null
@@ -96,14 +90,14 @@ interface IGraphVisitor<V, E : Edge<V> > {
     fun enter(v: Vertex<V>): Boolean
     fun enterChild(edge: E)
     fun onChildVisited(edge: E)
-    fun notVisited(fromV: Vertex<V>) = fromV.edges(backward) as Set<E> - visitedEdges
+    fun notVisited(fromV: Vertex<V>) = fromV.edges(backward) as Set<E>  - visitedEdges
 }
 typealias onVisitChildType<E> = (edge: E) -> Unit
 
 open class GraphVisitor<V, E : Edge<V> >(override var backward: Boolean = false) : IGraphVisitor<V, E> {
     override val visited = mutableSetOf<Vertex<V>>()
     override val visitedEdges = mutableSetOf<E>()
-    var callBack: onVisitChildType<E>? = null
+    private var callBack: onVisitChildType<E>? = null
 
     constructor(backward: Boolean, onVisit: onVisitChildType<E>) : this(backward) {
         this.callBack = onVisit
@@ -124,13 +118,6 @@ open class GraphVisitor<V, E : Edge<V> >(override var backward: Boolean = false)
 
 }
 
-class GraphWeightedWithData<V, D> : GraphBase<V, EdgeWeighted<V>>() {
-    override val vertices: MutableMap<V, VertexWithData<V, D>> = mutableMapOf()
-    override operator fun get(key: V): VertexWithData<V,D> = vertices[key]!!
-    fun connect(from: Vertex<V>, to: Vertex<V>, weight: Int) = register(EdgeWeighted(from, to, weight))
-    fun vertex(vKey: V, vData: D) = vertices.getOrPut(vKey) { VertexWithData(vKey, vData) }
-}
-
 class GraphWeighted<V> : GraphBase<V, EdgeWeighted<V>>() {
     override val vertices: MutableMap<V, Vertex<V>> = mutableMapOf()
     override operator fun get(key: V): Vertex<V> = vertices[key]!!
@@ -149,7 +136,7 @@ open class Graph<V> : GraphBase<V, Edge<V>>() {
     private fun connect(from: Vertex<V>, to: Vertex<V>) = register(Edge(from, to))
 }
 
-open abstract class GraphBase<V, E : Edge<V>>() {
+abstract class GraphBase<V, E : Edge<V>> {
     abstract val vertices: Map<V, Vertex<V>>
     val edges: MutableSet<E> = mutableSetOf()
     abstract operator fun get(key: V) : Vertex<V>
@@ -160,7 +147,7 @@ open abstract class GraphBase<V, E : Edge<V>>() {
         return e
     }
     val leafs: Set<Vertex<V>>
-        get() = (vertices.values - edges.map { it.vFrom }).toSet()
+        get() = (vertices.values.toSet() - edges.map { it.vFrom }.toSet())
 
     fun findPathResult(
         fromV: Vertex<V>,
@@ -178,11 +165,11 @@ open abstract class GraphBase<V, E : Edge<V>>() {
         walk(fromV, it)
     }.path
 
-    fun walk(start: Vertex<V>, callBack: onVisitChildType<E>) = GraphVisitor<V,E>(false, callBack).also {
+    fun walk(start: Vertex<V>, callBack: onVisitChildType<E>) = GraphVisitor(false, callBack).also {
         walk(start, it)
     }
 
-    fun walkBack(start: Vertex<V>, callBack: onVisitChildType<E>) = GraphVisitor<V,E>(true, callBack).also {
+    fun walkBack(start: Vertex<V>, callBack: onVisitChildType<E>) = GraphVisitor(true, callBack).also {
         walk(start, it)
     }
 

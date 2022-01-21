@@ -234,48 +234,62 @@ internal class KtTutorialTest {
             l.last().takeIf { l.take(windowSize).toPairs().count { it.first + it.second == l.last() } > 0 }
         }.filterNotNull().forEach { println(it) }
     }
+    class IndexPathResult<V, E : EdgeWeighted<V>>(private val toV: Vertex<V>) : GraphVisitor<V, E>() {
+        var index = 0
+        override fun enterChild(edge: E) {
+            super.enterChild(edge)
+            if (edge.vTo == toV) index ++
+            println("${edge} :$index")
+        }
 
+        override fun onChildVisited(edge: E) {
+            visitedEdges.remove(edge)
+
+        }
+    }
 
     @Test
-    fun testDay10Part2() {
-        val input = """
-            16
-            10
-            15
-            5
-            1
-            11
-            7
-            19
-            6
-            12
-            4
-            0
-            22
-        """.trimIndent()
-
-
-        val g = input.lineSequence()
-            .filter { it.isNotBlank() }
-            .map { it.toInt() }
-            .toWiredAdaptersGraph()
+    fun testDay10Part2Walk() {
+        val g = buildDay10Graph()
 
         println(g)
         assertEquals(13, g.vertices.size)
         assertEquals(16, g.edges.size)
+        val ctx = IndexPathResult(g[22])
+        g.walk(g[0], ctx)
+        assertEquals(8, ctx.index)
 
-        g[0].setD(1)
 
-        val notCalculated: Deque<Vertex<Int>> = LinkedList(g[0].edges().map { it.vTo })
+    }
+        @Test
+    fun testDay10Part2Index() {
+        val g = buildDay10Graph()
+        println(g)
+        assertEquals(13, g.vertices.size)
+        assertEquals(16, g.edges.size)
+        val ctx = IndexPathResult(g[22])
+        g.walk(g[0], ctx)
+        assertEquals(8, ctx.index)
+
+        val indexes = mutableMapOf(g[0] to 1)
+        val notCalculated: Deque<Vertex<Int>> = LinkedList()
+        notCalculated.add(g[0])
+
 
         while (notCalculated.isNotEmpty()) {
             val v = notCalculated.pollFirst()
 
-            val vIndex = v.inbound().map { it.vFrom }.map { it.data as Int }
+            if (indexes[v]!= null) {
+                v.outbound().map { it.vTo }.forEach { if (!notCalculated.contains(it)) notCalculated.offerLast(it) }
+                continue
+            }
+            val vIndex = v.inbound().map { it.vFrom }
+                .map { indexes[it] ?: -1 }
                 .fold(0) { acc, i -> if (i < 0 || acc < 0) -1 else acc + i }
             if (vIndex < 0) notCalculated.offerLast(v)
             else {
-                v.data = vIndex
+
+                indexes[v] = vIndex
                 v.outbound().map { it.vTo }.forEach {
                     if (!notCalculated.contains(it)) notCalculated.offerLast(it)
                 }
@@ -283,7 +297,32 @@ internal class KtTutorialTest {
             println("$v : calced : ${vIndex >= 0}, index : ${vIndex}, toCalc : ${notCalculated.size}")
         }
 
-        assertEquals(8, g[22].data as Int)
+        assertEquals(8, indexes[g[22]])
+    }
+
+    private fun buildDay10Graph(): GraphWeighted<Int> {
+        val input = """
+                16
+                10
+                15
+                5
+                1
+                11
+                7
+                19
+                6
+                12
+                4
+                0
+                22
+            """.trimIndent()
+
+
+        val g = input.lineSequence()
+            .filter { it.isNotBlank() }
+            .map { it.toInt() }
+            .toWiredAdaptersGraph()
+        return g
     }
 
     @ExperimentalStdlibApi
