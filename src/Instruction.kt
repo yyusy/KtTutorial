@@ -54,7 +54,7 @@ fun List<Instruction>.execute(ctx: ExecutionCtx): Int {
     return address
 }
 
-fun List<Instruction>.toGraph(): Graph<Int, Instruction> = Graph<Int, Instruction>().also {
+fun List<Instruction>.toGraph(): Graph<Int> = Graph<Int>().also {
     this.forEachIndexed { i, k ->
         it.connect(i, k.execute(ExecutionCtx(i)))
     }

@@ -1,13 +1,12 @@
-class WEdge<V>(override val vFrom: Vertex<V>, override val vTo: Vertex<V>, val w: Int) : Edge<V>(vFrom, vTo)
-
-open class Edge<V>(open val vFrom: Vertex<V>, open val vTo: Vertex<V>, val weight: Int? = null) {
-    init {
-        vFrom.addEdge(this)
-        vTo.addEdge(this)
-    }
-
+class EdgeWeighted<V>(from: Vertex<V>, to: Vertex<V>, val weight: Int) : Edge<V>(from, to) {
     override fun toString(): String {
-        return "${vFrom.key.toString()}->(${weight ?: ""})${vTo.key.toString()}"
+        return "${vFrom.key.toString()}->($weight)${vTo.key.toString()}"
+    }
+}
+
+open class Edge<V> constructor(open val vFrom: Vertex<V>, open val vTo: Vertex<V>) {
+    override fun toString(): String {
+        return "${vFrom.key.toString()}->${vTo.key.toString()}"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -29,12 +28,16 @@ open class Edge<V>(open val vFrom: Vertex<V>, open val vTo: Vertex<V>, val weigh
     }
 }
 
-class VertexWithData<V, D>(key: V, val data: D) : Vertex<V>(key)
-
+class VertexWithData<V, D>(key: V, data: D) : Vertex<V>(key, data) {
+    fun getD(): D = data as D
+    fun setD(d: D) {
+        data = d
+    }
+}
 open class Vertex<V>(
-    val key: V
+    val key: V,
+    var data: Any? = null
 ) {
-    //var data: D? = null // not in eqals or toString
     private val outboundEdges: MutableSet<Edge<V>> = mutableSetOf()
     private val inboundEdges: MutableSet<Edge<V>> = mutableSetOf()
 
@@ -44,11 +47,12 @@ open class Vertex<V>(
             e.vTo -> inboundEdges.add(e)
         }
     }
-
-    fun getEdges(backward: Boolean = false): Set<Edge<V>> = if (backward) inboundEdges else outboundEdges
+    fun inbound(): Set<Edge<V>> = inboundEdges
+    fun outbound(): Set<Edge<V>> = outboundEdges
+    fun edges(backward: Boolean = false): Set<Edge<V>> = if (backward) inboundEdges else outboundEdges
 
     override fun toString(): String {
-        return "Vertex(key=$key, ${if (outboundEdges.isNotEmpty()) "out=" + outboundEdges else ""}, inboundEdges=$inboundEdges)"
+        return "Vertex(key=$key, out=$outboundEdges, in=$inboundEdges)"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -67,11 +71,11 @@ open class Vertex<V>(
     }
 }
 
-class FindPathResult<V>(var toV: Vertex<V>, backward: Boolean = false) : GraphVisitor<V>(backward) {
+class FindPathResult<V, E : Edge<V>>(private val toV: Vertex<V>, backward: Boolean = false) : GraphVisitor<V, E>(backward) {
     val path = mutableListOf<Vertex<V>>()
-    private var found = false
-    override fun onVisit(v: Vertex<V>, edge: Edge<V>?): Boolean {
-        super.onVisit(v, edge)
+    var found = false
+    override fun enter(v: Vertex<V>): Boolean {
+        super.enter(v)
         if (v == toV) {
             path.add(v)
             found = true
@@ -80,102 +84,121 @@ class FindPathResult<V>(var toV: Vertex<V>, backward: Boolean = false) : GraphVi
         return v != toV
     }
 
-    override fun onReturnFromChild(edge: Edge<V>) {
+    override fun onChildVisited(edge: E) {
         if (found) path.add(if (backward) edge.vTo else edge.vFrom)
     }
 }
 
-interface IGraphVisitor<V> {
-    val visited: MutableSet<Vertex<V>>
-    val visitedEdges: MutableSet<Edge<V>>
+interface IGraphVisitor<V, E : Edge<V> > {
+    val visited: Set<Vertex<V>>
+    val visitedEdges: Set<E>
     var backward: Boolean
+    fun enter(v: Vertex<V>): Boolean
+    fun enterChild(edge: E)
+    fun onChildVisited(edge: E)
+    fun notVisited(fromV: Vertex<V>) = fromV.edges(backward) as Set<E> - visitedEdges
+}
+typealias onVisitChildType<E> = (edge: E) -> Unit
 
-    fun onVisit(v: Vertex<V>, edge: Edge<V>?): Boolean {
+open class GraphVisitor<V, E : Edge<V> >(override var backward: Boolean = false) : IGraphVisitor<V, E> {
+    override val visited = mutableSetOf<Vertex<V>>()
+    override val visitedEdges = mutableSetOf<E>()
+    var callBack: onVisitChildType<E>? = null
+
+    constructor(backward: Boolean, onVisit: onVisitChildType<E>) : this(backward) {
+        this.callBack = onVisit
+    }
+
+    override fun enter(v: Vertex<V>): Boolean {
         visited.add(v)
-        if (edge != null) visitedEdges.add(edge)
         return true
     }
 
-    fun onReturnFromChild(edge: Edge<V>)
-
-
-    fun edgesToVisit(fromV: Vertex<V>): Set<Edge<V>> =
-        fromV.getEdges(backward)
-            .filter { it !in visitedEdges }
-            .toSet()
-}
-
-abstract class GraphVisitor<V>(override var backward: Boolean = false) : IGraphVisitor<V> {
-    override val visited = mutableSetOf<Vertex<V>>()
-    override val visitedEdges = mutableSetOf<Edge<V>>()
-}
-
-class WGraph<V, D>() : Graph<V, D>() {
-    fun connect(v1: V, v2: V, weight: Int): Boolean {
-        return super.connect(v1, v2, weight)
+    override fun enterChild(edge: E) {
+        visitedEdges.add(edge)
     }
-}
 
-class XGraphVisitor<V>(backward: Boolean, val onReturnFromChildCallBack: (edge: Edge<V>) -> Unit) :
-    GraphVisitor<V>(backward) {
-    override fun onReturnFromChild(edge: Edge<V>) {
-        onReturnFromChildCallBack(edge)
+    override fun onChildVisited(edge: E) {
+        callBack?.invoke(edge)
     }
 
 }
 
+class GraphWeightedWithData<V, D> : GraphBase<V, EdgeWeighted<V>>() {
+    override val vertices: MutableMap<V, VertexWithData<V, D>> = mutableMapOf()
+    override operator fun get(key: V): VertexWithData<V,D> = vertices[key]!!
+    fun connect(from: Vertex<V>, to: Vertex<V>, weight: Int) = register(EdgeWeighted(from, to, weight))
+    fun vertex(vKey: V, vData: D) = vertices.getOrPut(vKey) { VertexWithData(vKey, vData) }
+}
 
-open class Graph<V, D>() {
-    var vertices: MutableMap<V, Vertex<V>> = mutableMapOf()
-    val edges: MutableSet<Edge<V>> = mutableSetOf()
+class GraphWeighted<V> : GraphBase<V, EdgeWeighted<V>>() {
+    override val vertices: MutableMap<V, Vertex<V>> = mutableMapOf()
+    override operator fun get(key: V): Vertex<V> = vertices[key]!!
+    fun connect(from: V, to: V, weight: Int) = connect(addVertex(from), addVertex(to), weight)
 
+    private fun connect(from: Vertex<V>, to: Vertex<V>, weight: Int) = register(EdgeWeighted(from, to, weight))
+    private fun addVertex(vKey: V) = vertices.getOrPut(vKey) { Vertex(vKey) }
+}
+
+open class Graph<V> : GraphBase<V, Edge<V>>() {
+    override val vertices: MutableMap<V, Vertex<V>> = mutableMapOf()
+    override operator fun get(key: V): Vertex<V> = vertices[key]!!
+    fun connect(from: V, to: V) = connect(addVertex(from), addVertex(to))
+
+    private fun addVertex(vKey: V) = vertices.getOrPut(vKey) { Vertex(vKey) }
+    private fun connect(from: Vertex<V>, to: Vertex<V>) = register(Edge(from, to))
+}
+
+open abstract class GraphBase<V, E : Edge<V>>() {
+    abstract val vertices: Map<V, Vertex<V>>
+    val edges: MutableSet<E> = mutableSetOf()
+    abstract operator fun get(key: V) : Vertex<V>
+    protected fun register(e : E) : E {
+        e.vFrom.addEdge(e)
+        e.vTo.addEdge(e)
+        edges.add(e)
+        return e
+    }
     val leafs: Set<Vertex<V>>
         get() = (vertices.values - edges.map { it.vFrom }).toSet()
-
-    fun addVertex(vKey: V, vData: D) = vertices.getOrPut(vKey) { VertexWithData(vKey, vData) }
-
-    fun addVertex(vKey: V) = vertices.getOrPut(vKey) { Vertex(vKey) }
-
-    operator fun get(key: V): Vertex<V> = vertices[key]!!
-
-    fun connect(v1: V, v2: V, weight: Int? = null) = edges.add(Edge(addVertex(v1), addVertex(v2), weight))
 
     fun findPathResult(
         fromV: Vertex<V>,
         toV: Vertex<V>,
         backward: Boolean = false
-    ) = FindPathResult(toV, backward).also {
-        walk(fromV, null, it)
+    ) = FindPathResult<V, E>(toV, backward).also {
+        walk(fromV, it)
     }
 
     fun findPath(
         fromV: Vertex<V>,
         toV: Vertex<V>,
         backward: Boolean = false
-    ) = FindPathResult(toV, backward).also {
-        walk(fromV, null, it)
+    ) = FindPathResult<V, E>(toV, backward).also {
+        walk(fromV, it)
     }.path
 
-    fun walk(start: Vertex<V>, callBack: (edge: Edge<V>) -> Unit) = XGraphVisitor<V>(false, callBack).also {
-        walk(start, null, it)
-
+    fun walk(start: Vertex<V>, callBack: onVisitChildType<E>) = GraphVisitor<V,E>(false, callBack).also {
+        walk(start, it)
     }
 
-    fun walkBack(start: Vertex<V>, callBack: (edge: Edge<V>) -> Unit) = XGraphVisitor<V>(true, callBack).also {
-        walk(start, null, it)
+    fun walkBack(start: Vertex<V>, callBack: onVisitChildType<E>) = GraphVisitor<V,E>(true, callBack).also {
+        walk(start, it)
     }
 
     /**
      * @return true - continue walk, false : finish
      */
 
-    private fun walk(fromV: Vertex<V>, edge: Edge<V>?, ctx: IGraphVisitor<V>): Boolean {
-        if (!ctx.onVisit(fromV, edge)) return false
+
+    fun walk(fromV: Vertex<V>, ctx: IGraphVisitor<V, E>): Boolean {
+        if (!ctx.enter(fromV)) return false
         var ret = true
-        for (e in ctx.edgesToVisit(fromV)) {
+        for (e in ctx.notVisited(fromV)) {
             val v = if (ctx.backward) e.vFrom else e.vTo
-            ret = walk(v, e, ctx)
-            ctx.onReturnFromChild(e)
+            ctx.enterChild(e)
+            ret = walk(v, ctx)
+            ctx.onChildVisited(e)
             if (!ret) {
                 println("Skip other children after $e")
                 break

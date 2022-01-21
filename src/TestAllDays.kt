@@ -10,5 +10,6 @@ class TestAllDays {
         Day7Part2FindBagContent()
         Day8BootLoop()
         Day8Part2BootFindBug()
+
     }
 }

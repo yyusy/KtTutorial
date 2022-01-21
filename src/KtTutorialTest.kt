@@ -1,4 +1,5 @@
 import org.junit.jupiter.api.Test
+import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -45,16 +46,18 @@ internal class KtTutorialTest {
         assertEquals(113, findPos("BBBFFFBRRR".substring(0, 7), 0..127))
     }
 
+
     @Test
     fun testMergingStringsDelimitedByCrLf() {
-        val str = """ 
-            a
-            a
-            a
-            
-            bbb
-            bbb
-        """.trimIndent()
+        val str = """
+                a
+                a
+                a
+
+                bbb
+                bbb
+            """.trimIndent()
+
         val r = str.splitToSequence(Regex("\n\\s*\n")).map { it.split("\n").joinToString("") }
         assertEquals(listOf("aaa", "bbbbbb"), r.toList())
     }
@@ -127,6 +130,22 @@ internal class KtTutorialTest {
         assertEquals("faded blue", rules["muted yellow"]!![1].bagName)
     }
 
+    @Test
+    fun testWeightedGraph() {
+        val g = Graph<Int>()
+        g.connect(1, 1)
+        g.connect(1, 2)
+        g.connect(2, 3)
+        g.connect(1, 2)
+        assertEquals(3, g.edges.size)
+        println(g)
+        //assertTrue(e1to2 === e1to2again)
+        val gw = GraphWeighted<Int>()
+        gw.connect(1, 2, 25)
+        println(g)
+        assertEquals(1, gw.edges.size)
+
+    }
 
     @Test
     fun testBagsGraph() {
@@ -136,7 +155,7 @@ internal class KtTutorialTest {
         assertEquals(2, g.leafs.size)
         val fromBag = "shiny gold"
         val countPaths = rules.filter { it.key != fromBag }.count {
-            val path = g.findPath(g[fromBag],g[it.key], true)
+            val path = g.findPath(g[fromBag], g[it.key], true)
             println("$fromBag -> ${it.key} : ${path}")
             path.isNotEmpty()
         }.also { println(it) }
@@ -155,7 +174,7 @@ internal class KtTutorialTest {
         val ctx = g.walk(start = g[shinyGoldBag]) { edge ->
             val bagsInChild = bagsContent.getOrDefault(edge.vTo.key, 0)
             val bagsInParent = bagsContent.getOrDefault(edge.vFrom.key, 0)
-            bagsContent[edge.vFrom.key] = bagsInParent + edge.weight!! * (bagsInChild + 1)
+            bagsContent[edge.vFrom.key] = bagsInParent + edge.weight * (bagsInChild + 1)
             println("$edge : child= $bagsInChild, total =${bagsContent[edge.vFrom.key]}")
         }
         assertEquals(7, ctx.visited.size)
@@ -216,6 +235,57 @@ internal class KtTutorialTest {
         }.filterNotNull().forEach { println(it) }
     }
 
+
+    @Test
+    fun testDay10Part2() {
+        val input = """
+            16
+            10
+            15
+            5
+            1
+            11
+            7
+            19
+            6
+            12
+            4
+            0
+            22
+        """.trimIndent()
+
+
+        val g = input.lineSequence()
+            .filter { it.isNotBlank() }
+            .map { it.toInt() }
+            .toWiredAdaptersGraph()
+
+        println(g)
+        assertEquals(13, g.vertices.size)
+        assertEquals(16, g.edges.size)
+
+        g[0].setD(1)
+
+        val notCalculated: Deque<Vertex<Int>> = LinkedList(g[0].edges().map { it.vTo })
+
+        while (notCalculated.isNotEmpty()) {
+            val v = notCalculated.pollFirst()
+
+            val vIndex = v.inbound().map { it.vFrom }.map { it.data as Int }
+                .fold(0) { acc, i -> if (i < 0 || acc < 0) -1 else acc + i }
+            if (vIndex < 0) notCalculated.offerLast(v)
+            else {
+                v.data = vIndex
+                v.outbound().map { it.vTo }.forEach {
+                    if (!notCalculated.contains(it)) notCalculated.offerLast(it)
+                }
+            }
+            println("$v : calced : ${vIndex >= 0}, index : ${vIndex}, toCalc : ${notCalculated.size}")
+        }
+
+        assertEquals(8, g[22].data as Int)
+    }
+
     @ExperimentalStdlibApi
     @Test
     fun testListToPairs() {
@@ -264,13 +334,7 @@ fun findWayToEnd(program: List<Instruction>): Int {
 fun findWayToInstruction(program: List<Instruction>, start: Int, end: Int, backward: Boolean = false): Int {
     val g = program.toGraph()
     println(g)
-    /*
-    val r = FindPathVisitor(g[end], backward).let {
-        g.walk(g[start], null, it)
-        it.path
-    }
-     */
-    val r = g.findPath(g[start],g[end], backward)
+    val r = g.findPath(g[start], g[end], backward)
     println("Path: $r")
     return r.minOfOrNull { it.key } ?: -1
 }

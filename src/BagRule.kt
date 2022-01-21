@@ -1,13 +1,11 @@
 data class BagRule(val bagName: String, val count: Int)typealias  BagRules = Pair<String, List<BagRule>>
 
-fun Map<String, List<BagRule>>.toGraph(): Graph<String, List<BagRule>> {
-    val g = Graph<String, List<BagRule>>()
-    this.forEach { bagName, bagContent ->
-        g.addVertex(bagName, bagContent)
-    }
-    this.forEach { bagName, bagContent ->
+fun Map<String, List<BagRule>>.toGraph(): GraphWeightedWithData<String, List<BagRule>> {
+    val g = GraphWeightedWithData<String, List<BagRule>>()
+    this.forEach { (bagName, bagContent) -> g.vertex(bagName, bagContent) }
+    this.forEach { (bagName, bagContent) ->
         for (cBag in bagContent) {
-            g.connect(bagName, cBag.bagName, cBag.count)
+            g.connect(g[bagName], g[cBag.bagName], cBag.count)
         }
     }
     return g
