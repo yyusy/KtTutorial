@@ -234,16 +234,18 @@ internal class KtTutorialTest {
             l.last().takeIf { l.take(windowSize).toPairs().count { it.first + it.second == l.last() } > 0 }
         }.filterNotNull().forEach { println(it) }
     }
+
     class IndexPathResult<V, E : EdgeWeighted<V>>(private val toV: Vertex<V>) : GraphVisitor<V, E>() {
         var index = 0
-        override fun enterChild(edge: E) {
-            super.enterChild(edge)
-            if (edge.vTo == toV) index ++
+        override fun registerVisit(edge: E) {
+            val ret = super.registerVisit(edge)
+            if (edge.vTo == toV) index++
             println("${edge} :$index")
+            return ret
         }
 
         override fun onChildVisited(edge: E) {
-            visitedEdges.remove(edge)
+            unRegisterVisit(edge)
 
         }
     }
@@ -251,17 +253,15 @@ internal class KtTutorialTest {
     @Test
     fun testDay10Part2Walk() {
         val g = buildDay10Graph()
-
         println(g)
         assertEquals(13, g.vertices.size)
         assertEquals(16, g.edges.size)
-        val ctx = IndexPathResult(g[22])
-        g.walk(g[0], ctx)
-        assertEquals(8, ctx.index)
+        assertEquals(8, g.index(g[0], g[22]))
 
 
     }
-        @Test
+
+    @Test
     fun testDay10Part2Index() {
         val g = buildDay10Graph()
         println(g)
@@ -279,7 +279,7 @@ internal class KtTutorialTest {
         while (notCalculated.isNotEmpty()) {
             val v = notCalculated.pollFirst()
 
-            if (indexes[v]!= null) {
+            if (indexes[v] != null) {
                 v.outbound().map { it.vTo }.forEach { if (!notCalculated.contains(it)) notCalculated.offerLast(it) }
                 continue
             }

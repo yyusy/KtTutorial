@@ -41,6 +41,7 @@ open class Vertex<V>(
             e.vTo -> inboundEdges.add(e)
         }
     }
+
     fun inbound(): Set<Edge<V>> = inboundEdges
     fun outbound(): Set<Edge<V>> = outboundEdges
     fun edges(backward: Boolean = false): Set<Edge<V>> = if (backward) inboundEdges else outboundEdges
@@ -65,7 +66,8 @@ open class Vertex<V>(
     }
 }
 
-class FindPathResult<V, E : Edge<V>>(private val toV: Vertex<V>, backward: Boolean = false) : GraphVisitor<V, E>(backward) {
+class FindPathResult<V, E : Edge<V>>(private val toV: Vertex<V>, backward: Boolean = false) :
+    GraphVisitor<V, E>(backward) {
     val path = mutableListOf<Vertex<V>>()
     var found = false
     override fun enter(v: Vertex<V>): Boolean {
@@ -83,19 +85,20 @@ class FindPathResult<V, E : Edge<V>>(private val toV: Vertex<V>, backward: Boole
     }
 }
 
-interface IGraphVisitor<V, E : Edge<V> > {
+interface IGraphVisitor<V, E : Edge<V>> {
     val visited: Set<Vertex<V>>
+        get() = visitedEdges.flatMap { listOf(it.vFrom, it.vTo) }.toSet()
     val visitedEdges: Set<E>
     var backward: Boolean
     fun enter(v: Vertex<V>): Boolean
-    fun enterChild(edge: E)
+    fun registerVisit(edge: E)
+    fun unRegisterVisit(edge: E)
     fun onChildVisited(edge: E)
-    fun notVisited(fromV: Vertex<V>) = fromV.edges(backward) as Set<E>  - visitedEdges
+    fun notVisited(fromV: Vertex<V>) = fromV.edges(backward) as Set<E> - visitedEdges
 }
 typealias onVisitChildType<E> = (edge: E) -> Unit
 
-open class GraphVisitor<V, E : Edge<V> >(override var backward: Boolean = false) : IGraphVisitor<V, E> {
-    override val visited = mutableSetOf<Vertex<V>>()
+open class GraphVisitor<V, E : Edge<V>>(override var backward: Boolean = false) : IGraphVisitor<V, E> {
     override val visitedEdges = mutableSetOf<E>()
     private var callBack: onVisitChildType<E>? = null
 
@@ -104,17 +107,21 @@ open class GraphVisitor<V, E : Edge<V> >(override var backward: Boolean = false)
     }
 
     override fun enter(v: Vertex<V>): Boolean {
-        visited.add(v)
         return true
     }
 
-    override fun enterChild(edge: E) {
+    override fun registerVisit(edge: E) {
         visitedEdges.add(edge)
+    }
+
+    override fun unRegisterVisit(edge: E) {
+        visitedEdges.remove(edge)
     }
 
     override fun onChildVisited(edge: E) {
         callBack?.invoke(edge)
     }
+
 
 }
 
@@ -139,13 +146,14 @@ open class Graph<V> : GraphBase<V, Edge<V>>() {
 abstract class GraphBase<V, E : Edge<V>> {
     abstract val vertices: Map<V, Vertex<V>>
     val edges: MutableSet<E> = mutableSetOf()
-    abstract operator fun get(key: V) : Vertex<V>
-    protected fun register(e : E) : E {
+    abstract operator fun get(key: V): Vertex<V>
+    protected fun register(e: E): E {
         e.vFrom.addEdge(e)
         e.vTo.addEdge(e)
         edges.add(e)
         return e
     }
+
     val leafs: Set<Vertex<V>>
         get() = (vertices.values.toSet() - edges.map { it.vFrom }.toSet())
 
@@ -173,18 +181,23 @@ abstract class GraphBase<V, E : Edge<V>> {
         walk(start, it)
     }
 
+
+    fun walk(fromV: Vertex<V>, ctx: IGraphVisitor<V, E>): IGraphVisitor<V, E> {
+        walkInternal(fromV, ctx)
+        return ctx
+    }
+
     /**
      * @return true - continue walk, false : finish
      */
 
 
-    fun walk(fromV: Vertex<V>, ctx: IGraphVisitor<V, E>): Boolean {
+    private fun walkInternal(fromV: Vertex<V>, ctx: IGraphVisitor<V, E>): Boolean {
         if (!ctx.enter(fromV)) return false
         var ret = true
         for (e in ctx.notVisited(fromV)) {
-            val v = if (ctx.backward) e.vFrom else e.vTo
-            ctx.enterChild(e)
-            ret = walk(v, ctx)
+            ctx.registerVisit(e)
+            ret = walkInternal(if (ctx.backward) e.vFrom else e.vTo, ctx)
             ctx.onChildVisited(e)
             if (!ret) {
                 println("Skip other children after $e")
@@ -192,6 +205,22 @@ abstract class GraphBase<V, E : Edge<V>> {
             }
         }
         return ret
+    }
+
+    fun index(from: Vertex<V>, to: Vertex<V>): Int {
+        var index = 0
+        walk(from, object : GraphVisitor<V, E>() {
+            override fun registerVisit(edge: E) {
+                super.registerVisit(edge)
+                if (edge.vTo == to) index++
+                println("${edge} :$index")
+            }
+
+            override fun onChildVisited(edge: E) {
+                unRegisterVisit(edge)
+            }
+        })
+        return index
     }
 
     override fun toString(): String {

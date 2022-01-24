@@ -6,18 +6,19 @@ fun main() {
 }
 
 fun day10Part2() {
-    val max = File("Day10Input.txt").useLines { l ->
+    val end = File("Day10Input.txt").useLines { l ->
         l.filter { it.isNotBlank() }
             .map { it.toInt() }
             .maxOrNull()!!
-    }
+    } + 3
     val g = File("Day10Input.txt").useLines { l ->
         l.filter { it.isNotBlank() }
             .map { it.toInt() }
-            .plus(sequenceOf(max + 3, 0))
+            .plus(sequenceOf(end, 0))
             .toWiredAdaptersGraph()
 
     }
+    assertEquals(1, g.index(g[0], g[end]))
 }
 
 fun Sequence<Int>.toWiredAdaptersGraph(): GraphWeighted<Int> {
