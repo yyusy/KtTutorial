@@ -1,6 +1,5 @@
 import org.junit.jupiter.api.Test
 import java.io.File
-import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -252,14 +251,12 @@ internal class KtTutorialTest {
     }
 
     @Test
-    fun testDay10Part2Walk() {
+    fun testDay10Part2GraphWalkIndex() {
         val g = buildDay10Graph()
         println(g)
         assertEquals(13, g.vertices.size)
         assertEquals(16, g.edges.size)
         assertEquals(8, g.index(g[0], g[22]))
-
-
     }
 
     @Test
@@ -271,44 +268,24 @@ internal class KtTutorialTest {
         val ctx = IndexPathResult(g[22])
         g.walk(g[0], ctx)
         assertEquals(8, ctx.index)
-
-        val indexes = mutableMapOf(g[0] to 1)
-        val notCalculated: Deque<Vertex<Int>> = LinkedList()
-        notCalculated.add(g[0])
-
-
-        while (notCalculated.isNotEmpty()) {
-            val v = notCalculated.pollFirst()
-
-            if (indexes[v] != null) {
-                v.outbound().map { it.vTo }.forEach { if (!notCalculated.contains(it)) notCalculated.offerLast(it) }
-                continue
-            }
-            val vIndex = v.inbound().map { it.vFrom }
-                .map { indexes[it] ?: -1 }
-                .fold(0) { acc, i -> if (i < 0 || acc < 0) -1 else acc + i }
-            if (vIndex < 0) notCalculated.offerLast(v)
-            else {
-
-                indexes[v] = vIndex
-                v.outbound().map { it.vTo }.forEach {
-                    if (!notCalculated.contains(it)) notCalculated.offerLast(it)
-                }
-            }
-            println("$v : calced : ${vIndex >= 0}, index : ${vIndex}, toCalc : ${notCalculated.size}")
-        }
-
-        assertEquals(8, indexes[g[22]])
     }
 
     @Test
-    fun testDay10Part2() {
+    fun testDay10Part2IndexBFS() {
+        val g = buildDay10Graph()
+        println(g)
+        assertEquals(13, g.vertices.size)
+        assertEquals(16, g.edges.size)
+        assertEquals(8, g.index(g[0])[g[22]])
+    }
 
+    fun buildDay10Graph2(): GraphWeighted<Int> {
         val end = File("Day10TestInput.txt").useLines { l ->
             l.filter { it.isNotBlank() }
                 .map { it.toInt() }
                 .maxOrNull()!!
         } + 3
+        println("End : $end")
         val g = File("Day10TestInput.txt").useLines { l ->
             l.filter { it.isNotBlank() }
                 .map { it.toInt() }
@@ -316,8 +293,21 @@ internal class KtTutorialTest {
                 .toWiredAdaptersGraph()
 
         }
-        val index = g.index(g[0], g[end])
-        assertEquals(19208, index)
+        return g
+    }
+
+    @Test
+    fun testDay10Part2Test2BFS() {
+
+        val g = buildDay10Graph2()
+        assertEquals(19208, g.index(g[0])[g[52]])
+    }
+
+    @Test
+    fun testDay10Part2Test2Walk() {
+
+        val g = buildDay10Graph2()
+        assertEquals(19208, g.index(g[0], g[52]))
     }
 
     private fun buildDay10Graph(): GraphWeighted<Int> {

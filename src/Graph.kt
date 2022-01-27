@@ -1,3 +1,5 @@
+import java.util.*
+
 class EdgeWeighted<V>(from: Vertex<V>, to: Vertex<V>, val weight: Int) : Edge<V>(from, to) {
     override fun toString(): String {
         return "${vFrom.key.toString()}->($weight)${vTo.key.toString()}"
@@ -127,7 +129,7 @@ open class GraphVisitor<V, E : Edge<V>>(override var backward: Boolean = false) 
 
 class GraphWeighted<V> : GraphBase<V, EdgeWeighted<V>>() {
     override val vertices: MutableMap<V, Vertex<V>> = mutableMapOf()
-    override operator fun get(key: V): Vertex<V> = vertices[key]!!
+    override operator fun get(key: V): Vertex<V> = vertices[key] ?: throw IllegalArgumentException("Unkwnown vertex $key")
     fun connect(from: V, to: V, weight: Int) = connect(addVertex(from), addVertex(to), weight)
 
     private fun connect(from: Vertex<V>, to: Vertex<V>, weight: Int) = register(EdgeWeighted(from, to, weight))
@@ -170,15 +172,15 @@ abstract class GraphBase<V, E : Edge<V>> {
         toV: Vertex<V>,
         backward: Boolean = false
     ) = FindPathResult<V, E>(toV, backward).also {
-        walk(fromV, it)
+        walkInternal(fromV, it)
     }.path
 
     fun walk(start: Vertex<V>, callBack: onVisitChildType<E>) = GraphVisitor(false, callBack).also {
-        walk(start, it)
+        walkInternal(start, it)
     }
 
     fun walkBack(start: Vertex<V>, callBack: onVisitChildType<E>) = GraphVisitor(true, callBack).also {
-        walk(start, it)
+        walkInternal(start, it)
     }
 
 
@@ -207,14 +209,14 @@ abstract class GraphBase<V, E : Edge<V>> {
         return ret
     }
 
-    fun index(from: Vertex<V>, to: Vertex<V>): Int {
-        var index = 0
+    fun index(from: Vertex<V>, to: Vertex<V>): Long {
+        var index = 0L
         walk(from, object : GraphVisitor<V, E>() {
             override fun registerVisit(edge: E) {
                 super.registerVisit(edge)
                 if (edge.vTo == to) index++
-                    println("${edge} :$index")
-                    println(this.notVisited(edge.vFrom))
+                    //println("${edge} :$index")
+                    //println(this.notVisited(edge.vFrom))
             }
 
             override fun onChildVisited(edge: E) {
@@ -222,6 +224,35 @@ abstract class GraphBase<V, E : Edge<V>> {
             }
         })
         return index
+    }
+
+    fun index(start : Vertex<V>) :Map<Vertex<V>, Long>
+    {
+        val indexes = mutableMapOf(start to 1L)
+        val notCalculated: Deque<Vertex<V>> = LinkedList<Vertex<V>>().apply { add(start) }
+        notCalculated.add(start)
+
+        while (notCalculated.isNotEmpty()) {
+            val v = notCalculated.pollFirst()
+
+            if (indexes[v] != null) {
+                v.outbound().map { it.vTo }.forEach { if (!notCalculated.contains(it)) notCalculated.offerLast(it) }
+                continue
+            }
+            val vIndex = v.inbound().map { it.vFrom }
+                .map { indexes[it] ?: -1 }
+                .fold(0L) { acc, i -> if (i < 0 || acc < 0) -1 else acc + i }
+            if (vIndex < 0) notCalculated.offerLast(v)
+            else {
+
+                indexes[v] = vIndex
+                v.outbound().map { it.vTo }.forEach {
+                    if (!notCalculated.contains(it)) notCalculated.offerLast(it)
+                }
+            }
+            println("$v : calced : ${vIndex >= 0}, index : ${vIndex}, toCalc : ${notCalculated.size}")
+        }
+        return indexes
     }
 
     override fun toString(): String {
