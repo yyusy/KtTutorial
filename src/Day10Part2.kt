@@ -18,6 +18,7 @@ fun day10Part2() {
             .toWiredAdaptersGraph()
 
     }
+    g.edges.sortedBy { it.vFrom.key }.forEach{ println(it) }
     assertEquals(1, g.index(g[0], g[end]))
 }
 

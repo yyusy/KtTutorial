@@ -1,4 +1,5 @@
 import org.junit.jupiter.api.Test
+import java.io.File
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -298,6 +299,25 @@ internal class KtTutorialTest {
         }
 
         assertEquals(8, indexes[g[22]])
+    }
+
+    @Test
+    fun testDay10Part2() {
+
+        val end = File("Day10TestInput.txt").useLines { l ->
+            l.filter { it.isNotBlank() }
+                .map { it.toInt() }
+                .maxOrNull()!!
+        } + 3
+        val g = File("Day10TestInput.txt").useLines { l ->
+            l.filter { it.isNotBlank() }
+                .map { it.toInt() }
+                .plus(sequenceOf(end, 0))
+                .toWiredAdaptersGraph()
+
+        }
+        val index = g.index(g[0], g[end])
+        assertEquals(19208, index)
     }
 
     private fun buildDay10Graph(): GraphWeighted<Int> {

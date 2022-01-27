@@ -213,7 +213,8 @@ abstract class GraphBase<V, E : Edge<V>> {
             override fun registerVisit(edge: E) {
                 super.registerVisit(edge)
                 if (edge.vTo == to) index++
-                println("${edge} :$index")
+                    println("${edge} :$index")
+                    println(this.notVisited(edge.vFrom))
             }
 
             override fun onChildVisited(edge: E) {
