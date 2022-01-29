@@ -17,7 +17,7 @@ fun day11() {
         prevStep = nextStep
         nextStep = prevStep.process { x, y -> convertPosition(y..x) }
         println("Step : ${step++}")
-        nextStep.println()
+        //nextStep.println()
     } while (nextStep != prevStep)
     val occupied = nextStep.sumOf { it.count { it == TAKEN } }
     assertEquals(2211, occupied)

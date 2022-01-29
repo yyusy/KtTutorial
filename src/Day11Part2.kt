@@ -71,7 +71,7 @@ fun List<List<SeatState>>.process(positionConverter: List<List<SeatState>>.(Poin
         prevStep = nextStep
         nextStep = prevStep.process { x, y -> positionConverter(Point(x, y)) }
         println("Step : ${step++}")
-        nextStep.println()
+        //nextStep.println()
     } while (nextStep != prevStep)
     return nextStep
 }

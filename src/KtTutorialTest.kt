@@ -427,9 +427,9 @@ internal class KtTutorialTest {
         var step = 1
         do {
             prevStep = nextStep
-            nextStep = prevStep.process { i, j -> convertPosition(i..j) }
+            nextStep = prevStep.process { y, x -> convertPosition(x..y) }
             println("Step : ${step++}")
-            nextStep.println()
+            //nextStep.println()
         } while (nextStep != prevStep)
         val occupied = nextStep.sumOf { it.count { it == TAKEN } }
         assertEquals(37, occupied)
