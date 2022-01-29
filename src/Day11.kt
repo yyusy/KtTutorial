@@ -42,8 +42,8 @@ fun Char.toSeatState() = when (this) {
     else -> null
 }
 
-inline operator fun List<List<SeatState>>.get(position: IntRange) = this[position.first][position.last]
-inline fun List<List<SeatState>>.println() {
+operator fun List<List<SeatState>>.get(position: IntRange) = this[position.first][position.last]
+fun List<List<SeatState>>.println() {
     this.forEach { println(it.joinToString("")) }
 }
 
@@ -71,6 +71,7 @@ fun List<List<SeatState>>.convertPosition(position: IntRange) = when (this[posit
 
 }
 
-fun List<List<SeatState>>.process(positionConverter: List<List<SeatState>>.(x: Int, y: Int) -> SeatState) = this.mapIndexed() { y, it ->
-    it.mapIndexed { x, it -> positionConverter(x, y) }
-}
+fun List<List<SeatState>>.process(positionConverter: List<List<SeatState>>.(x: Int, y: Int) -> SeatState) =
+    this.mapIndexed() { y, it ->
+        it.mapIndexed { x, it -> positionConverter(x, y) }
+    }

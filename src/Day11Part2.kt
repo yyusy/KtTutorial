@@ -7,7 +7,7 @@ fun main() {
 }
 
 fun day11Part2() {
-    var input = File("Day11Input.txt").useLines { l ->
+    val input = File("Day11Input.txt").useLines { l ->
         l.filter { it.isNotBlank() }.map { it.mapNotNull { it.toSeatState() } }.toList()
     }
     val ret = input.process { p -> convertPositionPart2(p) }
@@ -24,13 +24,13 @@ data class Area(val x: ClosedRange<Int>, val y: ClosedRange<Int>) {
     operator fun contains(point: Point) = point.x in x && point.y in y
     fun trace(start: Point, step: Point) = Trace(start, step)
 
-    inner class Trace(start: Point, val step: Point) : Iterator<Point> {
+    inner class Trace(start: Point, private val step: Point) : Iterator<Point> {
         private var next: Point = start + step
         override fun hasNext() = next in this@Area
 
         override fun next(): Point {
             if (!hasNext()) throw NoSuchElementException("$next is out of range with ${this@Area}")
-            return next.also { next = next + step }
+            return next.also { next += step }
         }
     }
 }
@@ -48,14 +48,14 @@ fun List<List<SeatState>>.visible(position: Point) = listOf(
     Point(+1, -1),
     Point(+1, +1),
     Point(+1, 0),
-).map {
+).mapNotNull {
     Area(0..this[0].lastIndex, 0..this.lastIndex)
         .trace(position, it).asSequence()
         .firstOrNull { this[it] != FLOOR }
-}.filterNotNull().map { this[it] }
+}.map { this[it] }
 
 
-inline operator fun List<List<SeatState>>.get(p: Point) = this[p.y][p.x]
+operator fun List<List<SeatState>>.get(p: Point) = this[p.y][p.x]
 
 fun List<List<SeatState>>.convertPositionPart2(position: Point) = when (this[position]) {
     FLOOR -> FLOOR
