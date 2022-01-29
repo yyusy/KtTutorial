@@ -1,6 +1,8 @@
+import SeatState.*
 import org.junit.jupiter.api.Test
 import java.io.File
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 const val BAG_RULES = """
@@ -334,6 +336,178 @@ internal class KtTutorialTest {
             .toWiredAdaptersGraph()
         return g
     }
+
+    @Test
+    fun testSealStateEnum() {
+        assertEquals("#", TAKEN.toString())
+        assertEquals("TAKEN", TAKEN.name)
+        assertEquals(0, TAKEN.ordinal)
+        assertEquals('#', TAKEN.code)
+        assertEquals(TAKEN, '#'.toSeatState())
+    }
+
+    @Test
+    fun testDay11() {
+        val input = day11Input()
+        input.println()
+        assertEquals('L', input[0][0].code)
+        assertEquals('.', input[0][1].code)
+        assertEquals('L', input[1][0].code)
+        assertEquals('.', input[2][input[2].lastIndex].code)
+        val a = input.adjucent(0..0).also { println(it) }
+        assertEquals(3, a.size)
+        assertEquals(2, a.count { it == EMPTY })
+        assertEquals(1, a.count { it == FLOOR })
+        assertEquals('#', input.convertPosition(0..0).code)
+        assertEquals('.', input.convertPosition(0..1).code)
+        val step1 = input.mapIndexed() { i, it ->
+            it.mapIndexed { j, it -> input.convertPosition(i..j) }
+        }
+        println()
+        step1.println()
+        assertEquals(day11Step1(), step1)
+        val step2 = step1.mapIndexed() { i, it ->
+            it.mapIndexed { j, it -> step1.convertPosition(i..j) }
+        }
+        println()
+        step2.println()
+        assertEquals(day11Step2(), step2)
+    }
+
+    @Test
+    fun testDay11Part2() {
+        val input = day11Part2Input()
+        input.println()
+        assertEquals('L', input[4][3].code)
+        assertNull(input.visible(Point(0, 0), Point(-1, -1)), "empty")
+        assertNull(input.visible(Point(0, 0), Point(0, -1)), "empty")
+        assertEquals(TAKEN, input.visible(Point(0, 0), Point(1, 0)))
+        assertEquals(TAKEN, input.visible(Point(3, 4), Point(-1, -1)))
+        assertEquals(TAKEN, input.visible(Point(3, 4), Point(-1, 1)))
+        assertEquals(TAKEN, input.visible(Point(3, 4), Point(-1, 0)))
+        assertEquals(TAKEN, input.visible(Point(3, 4), Point(1, 1)))
+        assertEquals(TAKEN, input.visible(Point(3, 4), Point(1, -1)))
+        assertEquals(TAKEN, input.visible(Point(3, 4), Point(1, 0)))
+        assertEquals(TAKEN, input.visible(Point(3, 4), Point(0, -1)))
+        assertEquals(TAKEN, input.visible(Point(3, 4), Point(0, 1)))
+        assertEquals(TAKEN, input.visible(Point(3, 4), Point(-1, -1)))
+
+        assertEquals(8, input.visible(Point(3, 4)).size)
+        assertEquals(3, input.visible(Point(0, 1)).size)
+        var o = input.process { y, x -> convertPositionPart2(Point(x, y)) }
+        o.println()
+    }
+
+    @Test
+    fun testDay11Part2Conversion() {
+        val input = day11Part2ConversionInput()
+        input.println()
+        assertEquals('#', input[Point(9, 7)].code)
+        assertEquals('#', input[Point(8, 7)].code)
+        assertEquals('#', input[Point(9, 8)].code)
+        assertEquals('.', input[Point(9, 6)].code)
+        assertEquals(4, input.visible(Point(9, 7)).size)
+    }
+
+
+    @Test
+    fun testDay11Part2Full() {
+        val input = day11Input()
+        input.println()
+        val ret = input.process { p -> convertPositionPart2(p) }
+        val occupied = ret.sumOf { it.count { it == TAKEN } }
+        assertEquals(26, occupied)
+        println("Occupied $occupied")
+    }
+
+    @Test
+    fun testDay11Full() {
+        var nextStep = day11Input()
+        var prevStep: List<List<SeatState>>
+        var step = 1
+        do {
+            prevStep = nextStep
+            nextStep = prevStep.process { i, j -> convertPosition(i..j) }
+            println("Step : ${step++}")
+            nextStep.println()
+        } while (nextStep != prevStep)
+        val occupied = nextStep.sumOf { it.count { it == TAKEN } }
+        assertEquals(37, occupied)
+        println("Occupied $occupied")
+    }
+
+    private fun day11Input(): List<List<SeatState>> {
+        val input = """
+                L.LL.LL.LL
+                LLLLLLL.LL
+                L.L.L..L..
+                LLLL.LL.LL
+                L.LL.LL.LL
+                L.LLLLL.LL
+                ..L.L.....
+                LLLLLLLLLL
+                L.LLLLLL.L
+                L.LLLLL.LL
+            """.trimIndent().lines().map { it.mapNotNull { it.toSeatState() } }
+        return input
+    }
+
+    private fun day11Step1(): List<List<SeatState>> {
+        val input = """
+                #.##.##.##
+                #######.##
+                #.#.#..#..
+                ####.##.##
+                #.##.##.##
+                #.#####.##
+                ..#.#.....
+                ##########
+                #.######.#
+                #.#####.##
+            """.trimIndent().lines().map { it.mapNotNull { it.toSeatState() } }
+        return input
+    }
+
+    private fun day11Step2(): List<List<SeatState>> {
+        val input = """
+                #.LL.L#.##
+                #LLLLLL.L#
+                L.L.L..L..
+                #LLL.LL.L#
+                #.LL.LL.LL
+                #.LLLL#.##
+                ..L.L.....
+                #LLLLLLLL#
+                #.LLLLLL.L
+                #.#LLLL.##
+            """.trimIndent().lines().map { it.mapNotNull { it.toSeatState() } }
+        return input
+    }
+
+    private fun day11Part2ConversionInput(): List<List<SeatState>> = """
+                #.##.##.##
+                #######.##
+                #.#.#..#..
+                ####.##.##
+                #.##.##.##
+                #.#####.##
+                ..#.#.....
+                ##########
+                #.######.#
+                #.#####.##
+            """.trimIndent().lines().map { it.mapNotNull { it.toSeatState() } }
+
+    private fun day11Part2Input(): List<List<SeatState>> = """
+                .......#.
+                ...#.....
+                .#.......
+                .........
+                ..#L....#
+                ....#....
+                .........
+                #........
+                ...#.....
+            """.trimIndent().lines().map { it.mapNotNull { it.toSeatState() } }
 
     @ExperimentalStdlibApi
     @Test
