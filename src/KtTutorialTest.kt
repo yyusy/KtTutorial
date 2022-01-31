@@ -1,6 +1,8 @@
 import SeatState.*
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.io.File
+import kotlin.math.absoluteValue
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -434,6 +436,101 @@ internal class KtTutorialTest {
         val occupied = nextStep.sumOf { it.count { it == TAKEN } }
         assertEquals(37, occupied)
         println("Occupied $occupied")
+    }
+
+    enum class Direction(val gradus: Int) {
+        NORTHWARD(0),
+        EASTWARD(90),
+        SOUTHWARD(180),
+        WESTWARD(270);
+
+        operator fun plus(turn: Int): Direction {
+            if (turn % 360 !in (enumValues<Direction>().map { it.gradus }))
+                throw IllegalArgumentException("gradus $gradus shall in ${enumValues<Direction>().map { it.gradus }}")
+            val res = (this.gradus + turn) % 360
+            return enumValues<Direction>().find { it.gradus == res }
+                ?: throw IllegalArgumentException("Unknown direction $res")
+        }
+
+    }
+
+    data class NavigationPoint(var p: Point, var d: Direction)
+
+    enum class NavInstruction(val code: String) {
+        FORWARD("F") {
+            override fun navigate(p: NavigationPoint, param: Int) {
+                when (p.d) {
+                    Direction.NORTHWARD -> p.p = Point(p.p.x, p.p.y - param)
+                    Direction.SOUTHWARD -> p.p = Point(p.p.x, p.p.y + param)
+                    Direction.EASTWARD -> p.p = Point(p.p.x + param, p.p.y)
+                    Direction.WESTWARD -> p.p = Point(p.p.x - param, p.p.y)
+                }
+            }
+        },
+        NORTH("N") {
+            override fun navigate(p: NavigationPoint, param: Int) {
+                p.p = Point(p.p.x, p.p.y - param)
+            }
+        },
+        SOUTH("S") {
+            override fun navigate(p: NavigationPoint, param: Int) {
+                p.p = Point(p.p.x, p.p.y + param)
+            }
+        },
+        EAST("E") {
+            override fun navigate(p: NavigationPoint, param: Int) {
+                p.p = Point(p.p.x + param, p.p.y)
+            }
+        },
+        WEST("W") {
+            override fun navigate(p: NavigationPoint, param: Int) {
+                p.p = Point(p.p.x - param, p.p.y)
+            }
+        },
+        RIGHT("R") {
+            override fun navigate(p: NavigationPoint, param: Int) {
+                p.d += param
+            }
+        },
+        LEFT("L") {
+            override fun navigate(p: NavigationPoint, param: Int) {
+                RIGHT.navigate(p, -param)
+            }
+        };
+
+        abstract fun navigate(p: NavigationPoint, param: Int)
+    }
+
+    fun String.toNavInstruction() =
+        enumValues<NavInstruction>().find { it.code == this } ?: throw IllegalArgumentException("Code $this is invalid")
+
+    @Test
+    fun testDay12() {
+        var input = """
+            F10
+            N3
+            F7
+            R90
+            F11
+        """.trimIndent()
+            .lineSequence()
+            .map { it.substring(0..0) to it.substring(1).toInt() }
+            .toList()
+        assertEquals("F", input[0].first)
+        assertEquals(10, input[0].second)
+        assertEquals("N", input[1].first)
+        assertEquals("F", input[4].first)
+        assertEquals(11, input[4].second)
+        println(input)
+        assertEquals(Direction.NORTHWARD, Direction.NORTHWARD + 360)
+        assertEquals(Direction.SOUTHWARD, Direction.NORTHWARD + 180)
+        assertEquals(Direction.SOUTHWARD, Direction.EASTWARD + 90)
+        assertThrows<IllegalArgumentException> { Direction.EASTWARD + 10 }
+        var pos = NavigationPoint(Point(0, 0), Direction.EASTWARD)
+        input.map { (code, v) -> code.toNavInstruction() to v }
+            .forEach { it.first.navigate(pos, it.second); pos.also { println(it) } }
+        println(pos)
+        assertEquals(25, pos.p.x.absoluteValue + pos.p.y.absoluteValue)
     }
 
     private fun day11Input(): List<List<SeatState>> {

@@ -1,4 +1,6 @@
-data class Ticket(val code: String, val seat: Pair<Int, Int>, val id: Int = seat.first * 8 + seat.second)
+data class Ticket(val code: String, val seat: Pair<Int, Int>) {
+    val id: Int = seat.first * 8 + seat.second
+}
 
 fun main() {
     System.`in`.bufferedReader().lineSequence().filter { it.isNotBlank() && it.length == 10 }
