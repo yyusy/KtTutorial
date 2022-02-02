@@ -1,6 +1,8 @@
 import java.io.File
 import kotlin.math.absoluteValue
 import kotlin.test.assertEquals
+import NavInstruction.*
+import kotlin.math.roundToInt
 
 fun main() {
     day12()
@@ -13,8 +15,9 @@ fun day12() {
             .toList()
     }
     val start = NavigationPoint(Point(0, 0), Direction.EASTWARD)
+    val navigator = Navigator()
     var next = start
-    input.forEach { next = it.instr.navigate(next, it.param); println("$it -> $next") }
+    input.forEach { next = navigator.navigate(it, next); println("$it -> $next") }
     println("Result : $next")
     assertEquals(590, next.p.x.absoluteValue + start.p.y.absoluteValue)
 }
@@ -25,7 +28,7 @@ enum class Direction(private val gradus: Int) {
     SOUTHWARD(180),
     WESTWARD(270);
 
-    operator fun minus(turn: Int)= plus(turn * -1)
+    operator fun minus(turn: Int) = plus(turn * -1)
 
     operator fun plus(turn: Int): Direction {
         if (turn.absoluteValue % 360 !in (enumValues<Direction>().map { it.gradus }))
@@ -41,40 +44,41 @@ enum class Direction(private val gradus: Int) {
 data class NavigationPoint(var p: Point, var d: Direction)
 
 enum class NavInstruction(val code: String) {
-    FORWARD("F") {
-        override fun navigate(np: NavigationPoint, param: Int) = np.apply {
-            p = when (d) {
-                Direction.NORTHWARD -> p.copy(y = p.y - param)
-                Direction.SOUTHWARD -> p.copy(y = p.y + param)
-                Direction.EASTWARD -> p.copy(x = p.x + param)
-                Direction.WESTWARD -> p.copy(x = p.x - param)
-            }
-        }
-    },
-    NORTH("N") {
-        override fun navigate(np: NavigationPoint, param: Int) = np.apply { p = Point(np.p.x, np.p.y - param) }
-    },
-    SOUTH("S") {
-        override fun navigate(np: NavigationPoint, param: Int) = np.apply { p = Point(np.p.x, np.p.y + param) }
-    },
-    EAST("E") {
-        override fun navigate(np: NavigationPoint, param: Int) = np.apply { p = Point(np.p.x + param, np.p.y) }
-
-    },
-    WEST("W") {
-        override fun navigate(np: NavigationPoint, param: Int) = np.apply { p = Point(p.x - param, p.y) }
-    },
-    RIGHT("R") {
-        override fun navigate(np: NavigationPoint, param: Int) = np.apply { d += param }
-    },
-    LEFT("L") {
-        override fun navigate(np: NavigationPoint, param: Int) = np.apply { d -= param }
-    };
-
-    abstract fun navigate(np: NavigationPoint, param: Int): NavigationPoint
+    FORWARD("F"),
+    NORTH("N"),
+    SOUTH("S"),
+    EAST("E"),
+    WEST("W"),
+    RIGHT("R"),
+    LEFT("L")
 }
 
 data class NavCommand(val instr: NavInstruction, val param: Int)
+class Navigator {
+    fun navigate(c: NavCommand, np: NavigationPoint) = when (c.instr) {
+        FORWARD -> np.apply {
+            p = when (d) {
+                Direction.NORTHWARD -> p.copy(y = p.y - c.param)
+                Direction.SOUTHWARD -> p.copy(y = p.y + c.param)
+                Direction.EASTWARD -> p.copy(x = p.x + c.param)
+                Direction.WESTWARD -> p.copy(x = p.x - c.param)
+            }
+        }
+        NORTH -> np.apply { p = Point(np.p.x, np.p.y - c.param) }
+        SOUTH -> np.apply { p = Point(np.p.x, np.p.y + c.param) }
+        EAST -> np.apply { p = Point(np.p.x + c.param, np.p.y) }
+        WEST -> np.apply { p = Point(p.x - c.param, p.y) }
+        RIGHT -> np.apply { d += c.param }
+        LEFT -> np.apply { d -= c.param }
+    }
+}
+
+fun Point.rotateClockWise(degrees: Int) = with(this) {
+    Point(
+        (x * Math.cos(Math.toRadians(-degrees.toDouble())) - y * Math.sin(Math.toRadians(-degrees.toDouble()))).roundToInt(),
+        (x * Math.sin(Math.toRadians(-degrees.toDouble())) + y * Math.cos(Math.toRadians(-degrees.toDouble()))).roundToInt()
+    )
+}
 
 fun String.toNavInstruction() =
     enumValues<NavInstruction>().find { it.code == this } ?: throw IllegalArgumentException("Code $this is invalid")

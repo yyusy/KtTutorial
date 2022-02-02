@@ -1,8 +1,10 @@
+import NavInstruction.*
 import SeatState.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.File
 import kotlin.math.absoluteValue
+import kotlin.math.roundToInt
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -464,20 +466,59 @@ internal class KtTutorialTest {
         assertEquals(Direction.NORTHWARD, Direction.EASTWARD - 450)
         assertEquals(Direction.WESTWARD, Direction.EASTWARD - 540)
         assertThrows<IllegalArgumentException> { Direction.EASTWARD + 10 }
+        val n = Navigator()
         assertEquals(
             Direction.SOUTHWARD,
-            NavInstruction.RIGHT.navigate(NavigationPoint(Point(0, 0), Direction.EASTWARD), 90).d
+            n.navigate(NavCommand(RIGHT, 90), NavigationPoint(Point(0, 0), Direction.EASTWARD)).d
         )
         assertEquals(
             Direction.NORTHWARD,
-            NavInstruction.LEFT.navigate(NavigationPoint(Point(0, 0), Direction.EASTWARD), 90).d
+            n.navigate(NavCommand(LEFT, 90), NavigationPoint(Point(0, 0), Direction.EASTWARD)).d
         )
 
-        val pos = NavigationPoint(Point(0, 0), Direction.EASTWARD)
-        input.map { (code, v) -> code.toNavInstruction() to v }
-            .forEach { it.first.navigate(pos, it.second); pos.also { println(it) } }
+        var pos = NavigationPoint(Point(0, 0), Direction.EASTWARD)
+        input.map { (code, v) -> NavCommand(code.toNavInstruction(), v) }
+            .forEach { pos = n.navigate(it, pos); pos.also { println(it) } }
         println(pos)
         assertEquals(25, pos.p.x.absoluteValue + pos.p.y.absoluteValue)
+    }
+
+    @Test
+    fun testRotatePoint() {
+        val point2 = Point(1, 1)
+        val angle = Math.toRadians(90.0)
+        val newx = point2.x * Math.cos(angle) - point2.y * Math.sin(angle)
+        val newy = point2.x * Math.sin(angle) + point2.y * Math.cos(angle)
+        assertEquals(-1.0, newx, 0.001)
+        assertEquals(1.0, newy, 0.001)
+        assertEquals(-1, newx.roundToInt())
+        assertEquals(1, newy.roundToInt())
+        assertEquals(Point(1, 0), Point(0, 1).rotateClockWise(90))
+        assertEquals(Point(0, -1), Point(1, 0).rotateClockWise(90))
+        assertEquals(Point(-1, 1), Point(1, 1).rotateClockWise(-90))
+    }
+
+    @Test
+    fun testDay12Part2() {
+        val input = """
+            F10
+            N3
+            F7
+            R90
+            F11
+        """.trimIndent()
+            .lineSequence()
+            .map { NavCommand(it.substring(0..0).toNavInstruction(), it.substring(1).toInt()) }
+            .toList()
+        val n = NavigatorWaypoint(Point(10, 1))
+        assertEquals(Point(100, 10), n.navigate(NavCommand(FORWARD, 10), Point(0, 0)))
+        assertEquals(Point(10, 4), with(n) { navigate(NavCommand(NORTH, 3), Point(0, 0));n.wayPoint })
+        assertEquals(
+            Point(4, -10),
+            with(NavigatorWaypoint(Point(10, 4))) { navigate(NavCommand(RIGHT, 90), Point(0, 0));wayPoint })
+        val ship = input.navigate(Point(10, 1), Point(0, 0))
+        assertEquals(Point(214, -72), ship)
+
     }
 
     private fun day11Input(): List<List<SeatState>> {
@@ -512,8 +553,7 @@ internal class KtTutorialTest {
         return input
     }
 
-    private fun day11Step2(): List<List<SeatState>> {
-        val input = """
+    private fun day11Step2(): List<List<SeatState>> = """
                 #.LL.L#.##
                 #LLLLLL.L#
                 L.L.L..L..
@@ -525,8 +565,6 @@ internal class KtTutorialTest {
                 #.LLLLLL.L
                 #.#LLLL.##
             """.trimIndent().lines().map { it.mapNotNull { it.toSeatState() } }
-        return input
-    }
 
     private fun day11Part2ConversionInput(): List<List<SeatState>> = """
                 #.##.##.##
