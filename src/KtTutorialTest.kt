@@ -396,8 +396,9 @@ internal class KtTutorialTest {
 
         assertEquals(8, input.visible(Point(3, 4)).size)
         assertEquals(3, input.visible(Point(0, 1)).size)
-        var o = input.process { y, x -> convertPositionPart2(Point(x, y)) }
-        o.println()
+        input.process { y, x -> convertPositionPart2(Point(x, y)) }
+            .also { println(it) }
+
     }
 
     @Test
@@ -438,75 +439,9 @@ internal class KtTutorialTest {
         println("Occupied $occupied")
     }
 
-    enum class Direction(val gradus: Int) {
-        NORTHWARD(0),
-        EASTWARD(90),
-        SOUTHWARD(180),
-        WESTWARD(270);
-
-        operator fun plus(turn: Int): Direction {
-            if (turn % 360 !in (enumValues<Direction>().map { it.gradus }))
-                throw IllegalArgumentException("gradus $gradus shall in ${enumValues<Direction>().map { it.gradus }}")
-            val res = (this.gradus + turn) % 360
-            return enumValues<Direction>().find { it.gradus == res }
-                ?: throw IllegalArgumentException("Unknown direction $res")
-        }
-
-    }
-
-    data class NavigationPoint(var p: Point, var d: Direction)
-
-    enum class NavInstruction(val code: String) {
-        FORWARD("F") {
-            override fun navigate(p: NavigationPoint, param: Int) {
-                when (p.d) {
-                    Direction.NORTHWARD -> p.p = Point(p.p.x, p.p.y - param)
-                    Direction.SOUTHWARD -> p.p = Point(p.p.x, p.p.y + param)
-                    Direction.EASTWARD -> p.p = Point(p.p.x + param, p.p.y)
-                    Direction.WESTWARD -> p.p = Point(p.p.x - param, p.p.y)
-                }
-            }
-        },
-        NORTH("N") {
-            override fun navigate(p: NavigationPoint, param: Int) {
-                p.p = Point(p.p.x, p.p.y - param)
-            }
-        },
-        SOUTH("S") {
-            override fun navigate(p: NavigationPoint, param: Int) {
-                p.p = Point(p.p.x, p.p.y + param)
-            }
-        },
-        EAST("E") {
-            override fun navigate(p: NavigationPoint, param: Int) {
-                p.p = Point(p.p.x + param, p.p.y)
-            }
-        },
-        WEST("W") {
-            override fun navigate(p: NavigationPoint, param: Int) {
-                p.p = Point(p.p.x - param, p.p.y)
-            }
-        },
-        RIGHT("R") {
-            override fun navigate(p: NavigationPoint, param: Int) {
-                p.d += param
-            }
-        },
-        LEFT("L") {
-            override fun navigate(p: NavigationPoint, param: Int) {
-                RIGHT.navigate(p, -param)
-            }
-        };
-
-        abstract fun navigate(p: NavigationPoint, param: Int)
-    }
-
-    fun String.toNavInstruction() =
-        enumValues<NavInstruction>().find { it.code == this } ?: throw IllegalArgumentException("Code $this is invalid")
-
     @Test
     fun testDay12() {
-        var input = """
+        val input = """
             F10
             N3
             F7
@@ -525,8 +460,20 @@ internal class KtTutorialTest {
         assertEquals(Direction.NORTHWARD, Direction.NORTHWARD + 360)
         assertEquals(Direction.SOUTHWARD, Direction.NORTHWARD + 180)
         assertEquals(Direction.SOUTHWARD, Direction.EASTWARD + 90)
+        assertEquals(Direction.WESTWARD, Direction.EASTWARD - 180)
+        assertEquals(Direction.NORTHWARD, Direction.EASTWARD - 450)
+        assertEquals(Direction.WESTWARD, Direction.EASTWARD - 540)
         assertThrows<IllegalArgumentException> { Direction.EASTWARD + 10 }
-        var pos = NavigationPoint(Point(0, 0), Direction.EASTWARD)
+        assertEquals(
+            Direction.SOUTHWARD,
+            NavInstruction.RIGHT.navigate(NavigationPoint(Point(0, 0), Direction.EASTWARD), 90).d
+        )
+        assertEquals(
+            Direction.NORTHWARD,
+            NavInstruction.LEFT.navigate(NavigationPoint(Point(0, 0), Direction.EASTWARD), 90).d
+        )
+
+        val pos = NavigationPoint(Point(0, 0), Direction.EASTWARD)
         input.map { (code, v) -> code.toNavInstruction() to v }
             .forEach { it.first.navigate(pos, it.second); pos.also { println(it) } }
         println(pos)
