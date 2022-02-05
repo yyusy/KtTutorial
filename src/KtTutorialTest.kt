@@ -555,8 +555,8 @@ internal class KtTutorialTest {
         7,13,x,x,59,x,31,19
         """.trimIndent().lines()
         val timeTable = input[1].split(",")
-            .mapIndexed { i, v -> i to v.toIntOrNull() }
-            .filter { it.second != null } .map { it as Pair<Int, Int>}
+            .mapIndexed { i, v -> i to v.toLongOrNull() }
+            .filter { it.second != null } .map { it as Pair<Int, Long>}
         println(timeTable)
         assertEquals<Int>(0, timeTable.first().first)
         assertEquals(7, timeTable.last().first)
