@@ -1,6 +1,5 @@
 import NavInstruction.*
 import java.io.File
-import kotlin.math.absoluteValue
 import kotlin.test.assertEquals
 
 fun main() {

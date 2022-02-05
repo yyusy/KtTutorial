@@ -3,7 +3,6 @@ import SeatState.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.File
-import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -480,7 +479,7 @@ internal class KtTutorialTest {
         input.map { (code, v) -> NavCommand(code.toNavInstruction(), v) }
             .forEach { pos = n.navigate(it, pos); pos.also { println(it) } }
         println(pos)
-        assertEquals(25, pos.p.x.absoluteValue + pos.p.y.absoluteValue)
+        assertEquals(25, pos.p.mdistance)
     }
 
     @Test
@@ -519,6 +518,60 @@ internal class KtTutorialTest {
         val ship = input.navigate(Point(10, 1), Point(0, 0))
         assertEquals(Point(214, -72), ship)
 
+    }
+
+    @Test
+    fun testDay13() {
+        val input = """
+        939
+        7,13,x,x,59,x,31,19
+        """.trimIndent().lines()
+        val myTime = input[0].toLong()
+        val timeTable = input[1].split(",").filter { it != "x" }.map { it.toLong() }
+        val res = timeTable
+            .map { it to (myTime / it + 1) * it - myTime }
+            .minByOrNull { it.second }!!
+        println(res)
+        assertEquals(295, res.first * res.second)
+    }
+    @Test
+    fun testDay13Part2Special() {
+        val input = listOf(0 to 7L, 1 to 13L,4 to 59L, 6 to 31L, 7 to 19L)
+        val y =  input[2].second
+        val py = input[2].first
+        val x =  input[4].second
+        val px = input[4].first
+
+        val p = x * (y - (px * 1.0 - py)/x)
+        println(p)
+        println( p % x)
+        println( (p + (px - py) ) % y)
+
+    }
+    @Test
+    fun testDay13Part2() {
+        val input = """
+        939
+        7,13,x,x,59,x,31,19
+        """.trimIndent().lines()
+        val timeTable = input[1].split(",")
+            .mapIndexed { i, v -> i to v.toIntOrNull() }
+            .filter { it.second != null } .map { it as Pair<Int, Int>}
+        println(timeTable)
+        assertEquals<Int>(0, timeTable.first().first)
+        assertEquals(7, timeTable.last().first)
+        assertEquals(5, timeTable.size)
+        val maxPeriod = timeTable.maxByOrNull { it.second }!!
+        val res = -maxPeriod.first + generateSequence(maxPeriod.second ) { maxPeriod.second + it }
+            .take(100000)
+            .firstOrNull { p ->
+                val start = p-maxPeriod.first
+                //println(start)
+                timeTable.all { (start + it.first) % it.second == 0L }
+            }!!
+
+        println("Result : $res")
+        assertEquals(1068781, res)
     }
 
     private fun day11Input(): List<List<SeatState>> {
