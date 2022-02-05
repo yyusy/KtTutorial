@@ -19,10 +19,10 @@ fun day12() {
     var next = start
     input.forEach { next = navigator.navigate(it, next); println("$it -> $next") }
     println("Result : $next")
-    assertEquals(590, next.p.x.absoluteValue + start.p.y.absoluteValue)
+    assertEquals(590, next.p.mdistance)
 }
 
-enum class Direction(private val gradus: Int) {
+enum class Direction(private val degree: Int) {
     NORTHWARD(0),
     EASTWARD(90),
     SOUTHWARD(180),
@@ -31,14 +31,14 @@ enum class Direction(private val gradus: Int) {
     operator fun minus(turn: Int) = plus(turn * -1)
 
     operator fun plus(turn: Int): Direction {
-        if (turn.absoluteValue % 360 !in (enumValues<Direction>().map { it.gradus }))
-            throw IllegalArgumentException("gradus $turn shall be in ${enumValues<Direction>().map { it.gradus }}")
-        var res = (this.gradus + turn) % 360
-        if (res < 0) res += 360
-        return enumValues<Direction>().find { it.gradus == res }
+        if (turn.absoluteValue % 360 !in (enumValues<Direction>().map { it.degree }))
+            throw IllegalArgumentException("degree $turn shall be in ${enumValues<Direction>().map { it.degree }}")
+        val res = ((this.degree + turn) % 360)
+            .let { if (it < 0) it + 360 else it }
+
+        return enumValues<Direction>().firstOrNull { it.degree == res }
             ?: throw IllegalArgumentException("Unknown direction $res")
     }
-
 }
 
 data class NavigationPoint(var p: Point, var d: Direction)

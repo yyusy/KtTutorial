@@ -1,5 +1,6 @@
 import java.io.File
 import SeatState.*
+import kotlin.math.absoluteValue
 import kotlin.test.assertEquals
 
 fun main() {
@@ -17,7 +18,11 @@ fun day11Part2() {
 }
 
 data class Point(val x: Int, val y: Int) {
+    val mdistance
+        get() = x.absoluteValue + y.absoluteValue
+
     operator fun plus(another: Point) = Point(x + another.x, y + another.y)
+
 }
 
 data class Area(val x: ClosedRange<Int>, val y: ClosedRange<Int>) {

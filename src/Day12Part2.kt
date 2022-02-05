@@ -16,7 +16,7 @@ fun day12Part2() {
 
     val ship = input.navigate(Point(10, 1), Point(0, 0))
     println("Result : $ship")
-    assertEquals(42013, ship.x.absoluteValue + ship.y.absoluteValue)
+    assertEquals(42013, ship.mdistance)
 }
 
 class NavigatorWaypoint(var wayPoint: Point) {
