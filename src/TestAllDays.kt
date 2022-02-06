@@ -4,6 +4,9 @@ class TestAllDays {
     @Test
     fun testAllDays()
     {
+        day3Part2()
+        day4Part2();
+        day5Part2()
         Day6FindAnswers()
         Day6Part2FindAnswers()
         Day7FindBag()

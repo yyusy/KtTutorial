@@ -12,7 +12,6 @@ fun day3Part2() {
         (0..l.lastIndex step step.first).mapIndexed { i, y -> y to (step.second * i % l[0].length) }
             .count { l[it.first][it.second] == treeMark }.also { println("$step : $it") }
     }.fold(1L) { acc, i -> acc * i }
-        .also { println(it) }
     assertEquals(3952146825, ret)
 }
 
