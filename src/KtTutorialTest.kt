@@ -89,7 +89,7 @@ internal class KtTutorialTest {
     @Test
     fun testUnion() {
         assertEquals("bc".toSet(), "abc".toSet().intersect("bc".toSet()))
-        assertEquals(emptySet<Char>(), "abc".toSet().intersect("de".toSet()))
+        assertEquals(emptySet(), "abc".toSet().intersect("de".toSet()))
 
     }
 
@@ -245,7 +245,7 @@ internal class KtTutorialTest {
         override fun registerVisit(edge: E) {
             val ret = super.registerVisit(edge)
             if (edge.vTo == toV) index++
-            println("${edge} :$index")
+            println("$edge :$index")
             return ret
         }
 
@@ -363,7 +363,7 @@ internal class KtTutorialTest {
         assertEquals(1, a.count { it == FLOOR })
         assertEquals('#', input.convertPosition(0..0).code)
         assertEquals('.', input.convertPosition(0..1).code)
-        val step1 = input.mapIndexed() { i, it ->
+        val step1 = input.mapIndexed { i, it ->
             it.mapIndexed { j, it -> input.convertPosition(i..j) }
         }
         println()
@@ -534,20 +534,54 @@ internal class KtTutorialTest {
         println(res)
         assertEquals(295, res.first * res.second)
     }
+
     @Test
     fun testDay13Part2Special() {
-        val input = listOf(0 to 7L, 1 to 13L,4 to 59L, 6 to 31L, 7 to 19L)
-        val y =  input[2].second
-        val py = input[2].first
-        val x =  input[4].second
-        val px = input[4].first
+        val input = listOf(7L, 13L, 59L, 31L, 19L).mapIndexed { i, v -> i to v }
+        val (py, y) = input[2]
+        val (px, x) = input[4]
 
-        val p = x * (y - (px * 1.0 - py)/x)
+        val p = x * (y - (px * 1.0 - py) / x)
         println(p)
-        println( p % x)
-        println( (p + (px - py) ) % y)
+        println(p % x)
+        println((p + (px - py)) % y)
 
     }
+
+    @Test
+    fun testDay14() {
+        val input = """
+            mask = XXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XXXX0X
+            mem[8] = 11
+            mem[7] = 101
+            mem[8] = 0
+            """.trimIndent().lines()
+
+        assertEquals(0, BitMask(0, false).apply(0))
+        assertEquals(1, BitMask(0, true).apply(1))
+        assertEquals(1, BitMask(0, true).apply(0))
+        val mask = input[0].toBitmask()
+        println(mask)
+        assertEquals(73, mask.apply(11))
+        assertEquals(101, mask.apply(101))
+        assertEquals(64, mask.apply(0))
+        assertEquals("7", "mem\\[(\\d+)".toRegex().find("mem[7]")!!.destructured!!.component1())
+        val instr = input.drop(1)
+            .filter { it.isNotBlank() }
+            .map { it.split("=").map { it.trim() } }
+            .map { (instr, value) ->
+                "mem\\[(\\d+)\\]".toRegex().find(instr)?.destructured!!.component1()!!.toInt() to value.toInt()
+            }
+        assertEquals(3, instr.size)
+        assertEquals((8 to 11), instr[0])
+        assertEquals((8 to 0), instr[2])
+        val res = instr.map { (addr, value) -> addr to mask.apply(value.toLong())}.toMap()
+        println(res)
+        assertEquals(2, res.size)
+        assertEquals(64, res[8])
+        assertEquals(165, res.values.sum())
+    }
+
     @Test
     fun testDay13Part2() {
         val input = """
@@ -556,16 +590,16 @@ internal class KtTutorialTest {
         """.trimIndent().lines()
         val timeTable = input[1].split(",")
             .mapIndexed { i, v -> i to v.toLongOrNull() }
-            .filter { it.second != null } .map { it as Pair<Int, Long>}
+            .filter { it.second != null }.map { it as Pair<Int, Long> }
         println(timeTable)
         assertEquals<Int>(0, timeTable.first().first)
         assertEquals(7, timeTable.last().first)
         assertEquals(5, timeTable.size)
         val maxPeriod = timeTable.maxByOrNull { it.second }!!
-        val res = -maxPeriod.first + generateSequence(maxPeriod.second ) { maxPeriod.second + it }
+        val res = -maxPeriod.first + generateSequence(maxPeriod.second) { maxPeriod.second + it }
             .take(100000)
             .firstOrNull { p ->
-                val start = p-maxPeriod.first
+                val start = p - maxPeriod.first
                 //println(start)
                 timeTable.all { (start + it.first) % it.second == 0L }
             }!!

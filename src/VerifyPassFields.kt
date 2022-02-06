@@ -1,3 +1,6 @@
+import java.io.File
+import kotlin.test.assertEquals
+
 fun main() {
     val fields = mapOf<String, (String) -> Boolean>(
         "pid" to { v -> Regex("\\s*\\d{9}").matches(v) },
@@ -14,7 +17,7 @@ fun main() {
         "hcl" to { Regex("#[0-9,a-f]{6}").matches(it) },
         "ecl" to { Regex("amb|blu|brn|gry|grn|hzl|oth").matches(it) },
     )
-    System.`in`.bufferedReader().useLines { lines ->
+    val ret = File("Day2Input.txt").useLines { lines ->
         var tmp = ""
         lines.plusElement("")
             .mapNotNull { s ->
@@ -33,6 +36,7 @@ fun main() {
             }
             .also { println("Valid : $it") }
     }
+    assertEquals(524, ret)
 }
 
 
