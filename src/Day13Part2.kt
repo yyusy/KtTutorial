@@ -25,13 +25,8 @@ fun <T : Number> findDenomSeq(p1: Pair<Int, T>, p2: Sequence<Long>) = p2
     .let { i -> generateSequence(i.first) { it + (i.second - i.first) } }
 
 fun <T : Number> Map<Int, T>.findDenominator(): Long {
-    val firstPeriod = this[0]!!.toLong()
+    val firstSequence = generateSequence(this[0]!!.toLong()) { it + this[0]!!.toLong() }
     return this.entries.drop(1)
-        .fold(
-            generateSequence(firstPeriod) { it + firstPeriod }
-        )
-        { acc, e ->
-            findDenomSeq(e.toPair(), acc)
-        }
+        .fold(firstSequence) { acc, e -> findDenomSeq(e.toPair(), acc) }
         .first()
 }
