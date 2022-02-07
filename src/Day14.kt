@@ -17,7 +17,7 @@ fun day14() {
                 } else true
             }
             .map { (instr, value) ->
-                "mem\\[(\\d+)\\]".toRegex().find(instr)?.destructured!!.component1()!!.toInt() to value.toLong()
+                "mem\\[(\\d+)".toRegex().find(instr)?.destructured!!.component1().toInt() to value.toLong()
             }
             .map { (addr, value) ->
                 val newVal = mask!!.apply(value)
@@ -27,7 +27,7 @@ fun day14() {
             .toMap()
     }
 
-    assertEquals(3215, res.values.sum())
+    assertEquals(13496669152158, res.values.sum())
 }
 
 fun String.toBitmask() = BitMaskHolder().also {
