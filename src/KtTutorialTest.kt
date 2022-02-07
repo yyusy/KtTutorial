@@ -4,9 +4,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.File
 import kotlin.math.roundToInt
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 const val BAG_RULES = """
                 light red bags contain 1 bright white bag, 2 muted yellow bags.
@@ -542,18 +540,18 @@ internal class KtTutorialTest {
         val p2 = 2 to 13
         val p3 = 3 to 19
 
-        val d = findDenomSeq(p2, generateSequence(p1.second.toLong()) { it + p1.second })
+        val d = findDenominator(p2, generateSequence(p1.second.toLong()) { it + p1.second })
 
         d.take(5).forEach {
             assertEquals(0, it % p1.second)
             assertEquals(0, (it + p2.first) % p2.second)
         }
-        findDenomSeq(p3, d).take(5).forEach {
+        findDenominator(p3, d).take(5).forEach {
             assertEquals(0, it % p1.second)
             assertEquals(0, (it + p2.first) % p2.second)
             assertEquals(0, (it + p3.first) % p3.second)
         }
-        assertEquals(3417, findDenomSeq(p3, d).first())
+        assertEquals(3417, findDenominator(p3, d).first())
 
     }
 
@@ -566,14 +564,14 @@ internal class KtTutorialTest {
             mem[8] = 0
             """.trimIndent().lines()
 
-        assertEquals(0, BitMask(0, false).apply(0))
-        assertEquals(1, BitMask(0, true).apply(1))
-        assertEquals(1, BitMask(0, true).apply(0))
+        assertEquals(0, BitMaskEntry(0, false).apply(0))
+        assertEquals(1, BitMaskEntry(0, true).apply(1))
+        assertEquals(1, BitMaskEntry(0, true).apply(0))
         val mask = input[0].toBitmask()
         println(mask)
-        assertEquals(73, mask.apply(11))
-        assertEquals(101, mask.apply(101))
-        assertEquals(64, mask.apply(0))
+        assertEquals(73, mask.applyToValue(11))
+        assertEquals(101, mask.applyToValue(101))
+        assertEquals(64, mask.applyToValue(0))
         assertEquals("7", "mem\\[(\\d+)".toRegex().find("mem[7]")!!.destructured!!.component1())
         val instr = input.drop(1)
             .filter { it.isNotBlank() }
@@ -584,13 +582,32 @@ internal class KtTutorialTest {
         assertEquals(3, instr.size)
         assertEquals((8 to 11), instr[0])
         assertEquals((8 to 0), instr[2])
-        val res = instr.map { (addr, value) -> addr to mask.apply(value.toLong()) }.toMap()
+        val res = instr.map { (addr, value) -> addr to mask.applyToValue(value.toLong()) }.toMap()
         println(res)
         assertEquals(2, res.size)
         assertEquals(64, res[8])
         assertEquals(165, res.values.sum())
     }
+    fun IntRange.toSequence() = generateSequence(this.start) { it + this.step}.takeWhile { it in this }
 
+    @Test
+    fun testDay14Part2() {
+        val mask = "mask=000000000000000000000000000000X1001X".toBitmask()
+        assertNotNull(mask[35])
+        assertEquals(false, mask[35]!!.bitVal)
+        assertNull( mask[5])
+        assertNull( mask[0])
+        val i = "mem[42] = 100".toMemInstruction()
+        println( mask)
+        println( i.address.toString(radix = 2))
+        val m = mask.applyToAddress(i.address)
+        println( m.joinToString(",") {  it.toString(radix = 2) })
+        assertEquals(4, m.size)
+        assertNotEquals(-1, m.indexOf(26))
+        assertNotEquals(-1, m.indexOf(27))
+        assertNotEquals(-1, m.indexOf(58))
+        assertNotEquals(-1, m.indexOf(59))
+    }
     @Test
     fun testDay13Part2Test2() {
         var res = mapOf(0 to 1789, 1 to 37, 2 to 47, 3 to 1889).findDenominator()
@@ -617,7 +634,7 @@ internal class KtTutorialTest {
         assertEquals(5, timeTable.size)
         assertEquals(7L, timeTable[0]!!)
         assertEquals(13L, timeTable[1])
-        var res = timeTable.findDenominator()
+        val res = timeTable.findDenominator()
         println("Result : $res")
         assertEquals(1068781, res)
     }

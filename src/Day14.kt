@@ -8,52 +8,78 @@ fun main() {
 fun day14() {
 
     val res = File("Day14Input.txt").useLines { l ->
-        var mask: BitMaskHolder? = null
+        var mask: BitMask? = null
         l.filter { it.isNotBlank() }
-            .map { it.split("=").map { it.trim() } }
-            .filter { (cmd, value) ->
+            .filter { cmd ->
                 if (cmd.startsWith("mask")) {
-                    mask = value.toBitmask(); println("mask = $mask"); false
+                    mask = cmd.toBitmask(); println("mask = $mask"); false
                 } else true
             }
-            .map { (instr, value) ->
-                "mem\\[(\\d+)".toRegex().find(instr)?.destructured!!.component1().toInt() to value.toLong()
-            }
-            .map { (addr, value) ->
-                val newVal = mask!!.apply(value)
-                println("mem[$addr] : $value -> $newVal")
-                addr to newVal
-            }
+            .map { cmd -> cmd.toMemInstruction() }
+            .map { it.applyToValue(mask!!) }
             .toMap()
     }
 
     assertEquals(13496669152158, res.values.sum())
 }
 
-fun String.toBitmask() = BitMaskHolder().also {
-    this.reversed().mapIndexed { i, v -> i to v.toString().toIntOrNull() }
-        .filter { it.second != null }
-        .map { (i, v) -> it.set(i, BitMask(i, v == 1)) }
+data class MemInstruction(val address: Long, val value: Long) {
+    fun applyToValue(mask: BitMask) = mask.applyToValue(value)
+        .let {
+            println("mem[$address] : $value  -> $it")
+            address to it
+        }
 }
 
-class BitMaskHolder {
-    private val v = mutableMapOf<Int, BitMask>()
-    operator fun set(bitPos: Int, bitMask: BitMask) {
+fun String.toMemInstruction() = this.split("=")
+    .let { (instr, value) ->
+        MemInstruction(
+            "mem\\[(\\d+)".toRegex().find(instr)?.destructured!!.component1().toLong(),
+            value.trim().toLong()
+        )
+    }
+
+fun String.toBitmask() = this.split("=").let { (_, mask) ->
+    BitMask().also {
+        mask.reversed().mapIndexed { i, v -> i to v.toString().toIntOrNull() }
+            .filter { it.second != null }
+            .map { (i, v) -> it.set(i, BitMaskEntry(i, v == 1)) }
+    }
+}
+
+class BitMask {
+    private val v = mutableMapOf<Int, BitMaskEntry>()
+    operator fun set(bitPos: Int, bitMask: BitMaskEntry) {
         v.put(bitPos, bitMask)
     }
 
     operator fun get(bitPos: Int) = v.get(bitPos)
-    fun apply(value: Long) = v.values.fold(value) { acc, v -> v.apply(acc) }
+    fun applyToValue(value: Long) = v.values.fold(value) { acc, v -> v.apply(acc) }
+    fun applyToAddress(address: Long) = v.values.fold(address) { acc, v ->
+        v.applyToAddress(acc)
+    }.let { addr ->
+        (0..35).minus(v.keys).fold(listOf(addr)) { al, p ->
+            al.flatMap { a ->
+                listOf(
+                    BitMaskEntry(p, true).apply(a)
+                        .also { println("set bit $p : ${a.toString(2)} -> ${it.toString(2)}") },
+                    BitMaskEntry(p, false).apply(a)
+                        .also { println("drop bit $p : ${a.toString(2)} -> ${it.toString(2)}") }
+                )
+            }
+        }
+    }
 
-    override fun toString() = generateSequence(34) { it - 1 }.takeWhile { it >= 0 }
-        .map {
-            v[it]?.let { if (it.bitVal) "1" else "0" } ?: "X"
-        }.joinToString("")
+    override fun toString() = (34 downTo 0)
+        .map { v[it]?.let { if (it.bitVal) "1" else "0" } ?: "X" }
+        .joinToString("")
 }
 
 
-data class BitMask(val bitPos: Int, val bitVal: Boolean) {
+data class BitMaskEntry(val bitPos: Int, val bitVal: Boolean) {
     private val mask = if (bitVal) 1L shl bitPos else (1L shl bitPos).inv()
     fun apply(value: Long) = if (bitVal) value or mask else value and mask
+    fun applyToAddress(value: Long) = if (bitVal) value or mask else value
 }
+
 

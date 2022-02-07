@@ -18,15 +18,16 @@ fun day13Part2() {
     assertEquals(1001569619313439, res)
 }
 
-fun <T : Number> findDenomSeq(p1: Pair<Int, T>, p2: Sequence<Long>) = p2
+fun <T : Number> findDenominator(p1: Pair<Int, T>, p2: Sequence<Long>) = p2
     .filter { (it + p1.first) % p1.second.toLong() == 0L }
     .zipWithNext()
     .first()
     .let { i -> generateSequence(i.first) { it + (i.second - i.first) } }
 
-fun <T : Number> Map<Int, T>.findDenominator(): Long {
-    val firstSequence = generateSequence(this[0]!!.toLong()) { it + this[0]!!.toLong() }
-    return this.entries.drop(1)
-        .fold(firstSequence) { acc, e -> findDenomSeq(e.toPair(), acc) }
-        .first()
-}
+fun <T : Number> Map<Int, T>.findDenominator() = this.entries.first()
+    .let { fPeriod -> generateSequence(fPeriod.value.toLong() + fPeriod.key) { fPeriod.value.toLong() + it } }
+    .let { fSeq ->
+        this.entries.drop(1)
+            .fold(fSeq) { acc, e -> findDenominator(e.toPair(), acc) }
+            .first()
+    }
