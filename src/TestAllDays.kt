@@ -18,5 +18,8 @@ class TestAllDays {
         day11Part2()
         day12()
         day12Part2()
+        day13()
+        day13Part2()
+        day14()
     }
 }

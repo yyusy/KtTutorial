@@ -535,16 +535,25 @@ internal class KtTutorialTest {
         assertEquals(295, res.first * res.second)
     }
 
-    @Test
-    fun testDay13Part2Special() {
-        val input = listOf(7L, 13L, 59L, 31L, 19L).mapIndexed { i, v -> i to v }
-        val (py, y) = input[2]
-        val (px, x) = input[4]
 
-        val p = x * (y - (px * 1.0 - py) / x)
-        println(p)
-        println(p % x)
-        println((p + (px - py)) % y)
+    @Test
+    fun testDay13CommonDenom() {
+        val p1 = 0 to 17
+        val p2 = 2 to 13
+        val p3 = 3 to 19
+
+        val d = findDenomSeq(p2, generateSequence(p1.second.toLong()) { it + p1.second })
+
+        d.take(5).forEach {
+            assertEquals(0, it % p1.second)
+            assertEquals(0, (it + p2.first) % p2.second)
+        }
+        findDenomSeq(p3, d).take(5).forEach {
+            assertEquals(0, it % p1.second)
+            assertEquals(0, (it + p2.first) % p2.second)
+            assertEquals(0, (it + p3.first) % p3.second)
+        }
+        assertEquals(3417, findDenomSeq(p3, d).first())
 
     }
 
@@ -575,11 +584,21 @@ internal class KtTutorialTest {
         assertEquals(3, instr.size)
         assertEquals((8 to 11), instr[0])
         assertEquals((8 to 0), instr[2])
-        val res = instr.map { (addr, value) -> addr to mask.apply(value.toLong())}.toMap()
+        val res = instr.map { (addr, value) -> addr to mask.apply(value.toLong()) }.toMap()
         println(res)
         assertEquals(2, res.size)
         assertEquals(64, res[8])
         assertEquals(165, res.values.sum())
+    }
+
+    @Test
+    fun testDay13Part2Test2() {
+        var res = mapOf(0 to 1789, 1 to 37, 2 to 47, 3 to 1889).findDenominator()
+        assertEquals(1202161486, res)
+        res = mapOf(0 to 67, 1 to 7, 2 to 59, 3 to 61).findDenominator()
+        assertEquals(754018, res)
+        res = mapOf(0 to 67, 1 to 7, 3 to 59, 4 to 61).findDenominator()
+        assertEquals(1261476, res)
     }
 
     @Test
@@ -590,20 +609,15 @@ internal class KtTutorialTest {
         """.trimIndent().lines()
         val timeTable = input[1].split(",")
             .mapIndexed { i, v -> i to v.toLongOrNull() }
-            .filter { it.second != null }.map { it as Pair<Int, Long> }
+            .filter { it.second != null }
+            .map { it as Pair<Int, Long> }
+            .toMap()
         println(timeTable)
-        assertEquals<Int>(0, timeTable.first().first)
-        assertEquals(7, timeTable.last().first)
-        assertEquals(5, timeTable.size)
-        val maxPeriod = timeTable.maxByOrNull { it.second }!!
-        val res = -maxPeriod.first + generateSequence(maxPeriod.second) { maxPeriod.second + it }
-            .take(100000)
-            .firstOrNull { p ->
-                val start = p - maxPeriod.first
-                //println(start)
-                timeTable.all { (start + it.first) % it.second == 0L }
-            }!!
 
+        assertEquals(5, timeTable.size)
+        assertEquals(7L, timeTable[0]!!)
+        assertEquals(13L, timeTable[1])
+        var res = timeTable.findDenominator()
         println("Result : $res")
         assertEquals(1068781, res)
     }
@@ -703,6 +717,7 @@ internal class KtTutorialTest {
 
     }
 }
+
 
 fun findWayToEnd(program: List<Instruction>): Int {
     val visited = sortedSetOf<Int>()
