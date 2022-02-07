@@ -8,9 +8,9 @@ fun main() {
 fun day13Part2() {
     val l = File("Day13Input.txt").readLines()
     val timeTable = l[1].split(",")
-        .mapIndexed { i, v -> i to v.toIntOrNull() }
-        .filter { it.second != null }.map { it as Pair<Int, Int> }
-        .toMap()
+        .mapIndexed { i, v -> i to v }
+        .filter { it.second.toLongOrNull() != null }
+        .associate { (i, v) -> i to v.toLong() }
     println(timeTable)
     val res = timeTable.findDenominator()
 
@@ -19,11 +19,8 @@ fun day13Part2() {
 }
 
 fun <T : Number> findDenomSeq(p1: Pair<Int, T>, p2: Sequence<Long>) = p2
-    .map { it to (it + p1.first) % p1.second.toLong() }
-    .filter { it.second == 0L }
-    .map { it.first }
+    .filter { (it + p1.first) % p1.second.toLong() == 0L }
     .zipWithNext()
-    .onEach { println("$it : ${it.second - it.first}") }
     .first()
     .let { i -> generateSequence(i.first) { it + (i.second - i.first) } }
 
