@@ -21,5 +21,6 @@ class TestAllDays {
         day13()
         day13Part2()
         day14()
+        day15()
     }
 }

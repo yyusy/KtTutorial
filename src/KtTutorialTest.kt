@@ -639,6 +639,26 @@ internal class KtTutorialTest {
         assertEquals(1068781, res)
     }
 
+    @Test
+    fun testDay15() {
+        val game = elvesGame(listOf(0, 3, 6))
+        game.take(10).forEachIndexed { i, v ->
+            if (i == 3) assertEquals(0, v)
+            if (i == 4) assertEquals(3, v)
+            if (i == 5) assertEquals(3, v)
+            if (i == 6) assertEquals(1, v)
+            if (i == 8) assertEquals(4, v)
+        }
+
+        assertEquals(436, game.take(2020).last())
+        assertEquals(1, elvesGame(listOf(1, 3, 2)).take(2020).last())
+        assertEquals(438, elvesGame(listOf(3, 2, 1)).take(2020).last())
+        assertEquals(1836, elvesGame(listOf(3, 1, 2)).take(2020).last())
+        assertEquals(1665, elvesGame(listOf(0, 1, 4, 13, 15, 12, 16)).take(2020).last())
+        assertEquals(16439, elvesGame(listOf(0, 1, 4, 13, 15, 12, 16)).take(30000000).last())
+
+    }
+
     private fun day11Input(): List<List<SeatState>> {
         val input = """
                 L.LL.LL.LL
