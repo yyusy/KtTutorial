@@ -588,26 +588,28 @@ internal class KtTutorialTest {
         assertEquals(64, res[8])
         assertEquals(165, res.values.sum())
     }
-    fun IntRange.toSequence() = generateSequence(this.start) { it + this.step}.takeWhile { it in this }
+
+    fun IntRange.toSequence() = generateSequence(this.start) { it + this.step }.takeWhile { it in this }
 
     @Test
     fun testDay14Part2() {
         val mask = "mask=000000000000000000000000000000X1001X".toBitmask()
         assertNotNull(mask[35])
         assertEquals(false, mask[35]!!.bitVal)
-        assertNull( mask[5])
-        assertNull( mask[0])
+        assertNull(mask[5])
+        assertNull(mask[0])
         val i = "mem[42] = 100".toMemInstruction()
-        println( mask)
-        println( i.address.toString(radix = 2))
+        println(mask)
+        println(i.address.toString(radix = 2))
         val m = mask.applyToAddress(i.address)
-        println( m.joinToString(",") {  it.toString(radix = 2) })
+        println(m.joinToString(",") { it.toString(radix = 2) })
         assertEquals(4, m.size)
         assertNotEquals(-1, m.indexOf(26))
         assertNotEquals(-1, m.indexOf(27))
         assertNotEquals(-1, m.indexOf(58))
         assertNotEquals(-1, m.indexOf(59))
     }
+
     @Test
     fun testDay13Part2Test2() {
         var res = mapOf(0 to 1789, 1 to 37, 2 to 47, 3 to 1889).findDenominator()
@@ -657,6 +659,54 @@ internal class KtTutorialTest {
         assertEquals(1665, elvesGame(listOf(0, 1, 4, 13, 15, 12, 16)).take(2020).last())
         assertEquals(16439, elvesGame(listOf(0, 1, 4, 13, 15, 12, 16)).take(30000000).last())
 
+    }
+
+    @Test
+    fun day16Test() {
+        val input = """
+            class: 1-3 or 5-7
+            row: 6-11 or 33-44
+            seat: 13-40 or 45-50
+            
+            your ticket:
+            7,1,14
+            
+            nearby tickets:
+            7,3,47
+            40,4,50
+            55,2,20
+            38,6,12
+            """.trimIndent()
+        val rules = input.substring(0, input.indexOf("your ticket:")).lineSequence()
+            .filter { it.isNotBlank() }
+            .map {it.toTicketRule()}
+            .toList()
+
+        println("Rules : $rules")
+        assertEquals(3, rules.size)
+        assertEquals("class", rules[0].name)
+        assertEquals(1..3, rules[0].range1)
+        assertEquals(5..7, rules[0].range2)
+        assertEquals(false, rules[0].isValid(4))
+        assertEquals(true, rules[0].isValid(3))
+        assertEquals(false, rules.isValid(55))
+        assertEquals(false, rules.isValid(12))
+        assertEquals(true, rules[2].isValid(50))
+        assertEquals(true, rules.isValid(50))
+        val tickets = input.substring(input.indexOf("nearby tickets:") + "nearby tickets:".length).lineSequence()
+            .filter { it.isNotBlank() }
+            .map { it.split(",").filter { it.isNotBlank() }.map { it.trim().toInt() } }
+            .toList()
+        println("Tickets : $tickets")
+        assertEquals(4, tickets.size)
+        val invalid = tickets.flatMap { t ->
+            t.filter { v -> !rules.isValid(v) }
+        }
+        println("Invalid : $invalid")
+        assertEquals(3, invalid.size)
+        assertContains(invalid, 4)
+        assertContains(invalid, 55)
+        assertContains(invalid, 12)
     }
 
     private fun day11Input(): List<List<SeatState>> {
