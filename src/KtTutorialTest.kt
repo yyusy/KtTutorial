@@ -679,7 +679,7 @@ internal class KtTutorialTest {
             """.trimIndent()
         val rules = input.substring(0, input.indexOf("your ticket:")).lineSequence()
             .filter { it.isNotBlank() }
-            .map {it.toTicketRule()}
+            .map { it.toTicketRule() }
             .toList()
 
         println("Rules : $rules")
@@ -707,6 +707,51 @@ internal class KtTutorialTest {
         assertContains(invalid, 4)
         assertContains(invalid, 55)
         assertContains(invalid, 12)
+    }
+
+    @Test
+    fun day16Part2Test() {
+        val input = """
+            class: 0-1 or 4-19
+            row: 0-5 or 8-19
+            seat: 0-13 or 16-19
+            
+            your ticket:
+            11,12,13
+            
+            nearby tickets:
+            3,9,18
+            15,1,5
+            5,14,9
+            """.trimIndent()
+        val rules = input.substring(0, input.indexOf("your ticket:")).lineSequence()
+            .filter { it.isNotBlank() }
+            .map { it.toTicketRule() }
+            .toList()
+
+        println("Rules : $rules")
+
+        val tickets = input.substring(input.indexOf("nearby tickets:") + "nearby tickets:".length).lineSequence()
+            .filter { it.isNotBlank() }
+            .map { it.split(",").filter { it.isNotBlank() }.map { it.trim().toInt() } }
+            .toList()
+
+        println("Tickets : $tickets")
+        assertEquals(3, tickets.size)
+
+        val x = rules.map { it to mutableListOf<Int>() }.toMap()
+        tickets
+            .forEach { t ->
+                t.forEachIndexed { i, v -> rules.forEach { if (!it.isValid(v)) x[it]!!.add(i) } }
+            }
+        println(x)
+        val rulesForColumn = x.mapValues { v ->
+            (0..rules.lastIndex subtract v.value).first()
+        }
+        println(rulesForColumn)
+        assertEquals(0, rulesForColumn[rules[1]])
+        assertEquals(1, rulesForColumn[rules[0]])
+        assertEquals(2, rulesForColumn[rules[2]])
     }
 
     private fun day11Input(): List<List<SeatState>> {
