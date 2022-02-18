@@ -25,7 +25,7 @@ fun day16Part2() {
     println("Rules : $rules")
     var tickets: List<List<Int>>? = null
     val rulesByColumn = File("Day16Input.txt").useLines { l ->
-        val x = rules.map { it to mutableListOf<Int>() }.toMap()
+        val x = rules.associateWith { mutableListOf<Int>() }
         var nearbyTicketsSectionFound = false
         tickets = l.filter { it.isNotBlank() }
             .dropWhile { nearbyTicketsSectionFound = (it == "nearby tickets:"); !nearbyTicketsSectionFound }
