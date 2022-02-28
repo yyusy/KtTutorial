@@ -29,6 +29,11 @@ data class MemInstruction(val address: Long, val value: Long) {
             println("mem[$address] : $value  -> $it")
             address to it
         }
+    fun applyToAddress(mask: BitMask) = mask.applyToAddress(address)
+        .associate {
+            println("mem[$address -> $it] : $value")
+            it to value
+        }
 }
 
 fun String.toMemInstruction() = this.split("=")
@@ -62,9 +67,10 @@ class BitMask {
             al.flatMap { a ->
                 listOf(
                     BitMaskEntry(p, true).apply(a)
-                        .also { println("set bit $p : ${a.toString(2)} -> ${it.toString(2)}") },
+                        //.also { println("set bit $p : ${a.toString(2)} -> ${it.toString(2)}") }
+                    ,
                     BitMaskEntry(p, false).apply(a)
-                        .also { println("drop bit $p : ${a.toString(2)} -> ${it.toString(2)}") }
+                        //.also { println("drop bit $p : ${a.toString(2)} -> ${it.toString(2)}") }
                 )
             }
         }

@@ -593,7 +593,7 @@ internal class KtTutorialTest {
 
     @Test
     fun testDay14Part2() {
-        val mask = "mask=000000000000000000000000000000X1001X".toBitmask()
+        var mask = "mask=000000000000000000000000000000X1001X".toBitmask()
         assertNotNull(mask[35])
         assertEquals(false, mask[35]!!.bitVal)
         assertNull(mask[5])
@@ -601,13 +601,19 @@ internal class KtTutorialTest {
         val i = "mem[42] = 100".toMemInstruction()
         println(mask)
         println(i.address.toString(radix = 2))
-        val m = mask.applyToAddress(i.address)
-        println(m.joinToString(",") { it.toString(radix = 2) })
-        assertEquals(4, m.size)
-        assertNotEquals(-1, m.indexOf(26))
-        assertNotEquals(-1, m.indexOf(27))
-        assertNotEquals(-1, m.indexOf(58))
-        assertNotEquals(-1, m.indexOf(59))
+        val adresses = mask.applyToAddress(i.address)
+        println(adresses.joinToString(",") { it.toString(radix = 2) })
+        println(adresses.joinToString(",") { it.toString() })
+        assertEquals(4, adresses.size)
+        assertEquals(setOf(26L, 27, 58, 59), adresses.toSet())
+        val adresses2 = "mask=00000000000000000000000000000000X0XX".toBitmask().applyToAddress(26)
+        assertEquals(8, adresses2.size)
+        assertEquals(setOf(16L, 17, 18, 19, 24, 25, 26, 27), adresses2.toSet())
+        val ret = ("mem[42] = 100".toMemInstruction()
+            .applyToAddress("mask=000000000000000000000000000000X1001X".toBitmask())) +
+                ("mem[26] = 1".toMemInstruction().applyToAddress("mask=00000000000000000000000000000000X0XX".toBitmask()))
+        println(ret)
+        assertEquals(208, ret.values.sum())
     }
 
     @Test
