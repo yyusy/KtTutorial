@@ -44,7 +44,7 @@ fun day16Part2() {
     }
 
     rulesByColumn.asSequence().sortedBy { it.value }.forEach { println("${it.value} : ${it.key}") }
-    assertEquals(0, ((0..(rulesByColumn.size - 1)) - rulesByColumn.map { it.value }).size)
+    assertEquals(0, ((0 until rulesByColumn.size) - rulesByColumn.map { it.value }).size)
     //validate
     tickets!!.forEach { t ->
         rulesByColumn.forEach { r ->
