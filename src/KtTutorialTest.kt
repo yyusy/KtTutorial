@@ -3,6 +3,8 @@ import SeatState.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.File
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.test.*
 
@@ -609,9 +611,11 @@ internal class KtTutorialTest {
         val adresses2 = "mask=00000000000000000000000000000000X0XX".toBitmask().applyToAddress(26)
         assertEquals(8, adresses2.size)
         assertEquals(setOf(16L, 17, 18, 19, 24, 25, 26, 27), adresses2.toSet())
+        // end to end
         val ret = ("mem[42] = 100".toMemInstruction()
             .applyToAddress("mask=000000000000000000000000000000X1001X".toBitmask())) +
-                ("mem[26] = 1".toMemInstruction().applyToAddress("mask=00000000000000000000000000000000X0XX".toBitmask()))
+                ("mem[26] = 1".toMemInstruction()
+                    .applyToAddress("mask=00000000000000000000000000000000X0XX".toBitmask()))
         println(ret)
         assertEquals(208, ret.values.sum())
     }
@@ -663,7 +667,7 @@ internal class KtTutorialTest {
         assertEquals(438, elvesGame(listOf(3, 2, 1)).take(2020).last())
         assertEquals(1836, elvesGame(listOf(3, 1, 2)).take(2020).last())
         assertEquals(1665, elvesGame(listOf(0, 1, 4, 13, 15, 12, 16)).take(2020).last())
-        assertEquals(16439, elvesGame(listOf(0, 1, 4, 13, 15, 12, 16)).take(30000000).last())
+        //assertEquals(16439, elvesGame(listOf(0, 1, 4, 13, 15, 12, 16)).take(30000000).last())
 
     }
 
@@ -759,6 +763,41 @@ internal class KtTutorialTest {
         assertEquals(1, rulesForColumn[rules[0]])
         assertEquals(2, rulesForColumn[rules[2]])
     }
+
+    @Test
+    fun day17Test() {
+        val input = """
+            .#.
+            ..#
+            ###
+        """.trimIndent().lines().toCube()
+        println(input)
+        assertEquals(CubeState.INACTIVE, input[CubePos(0, 0, 0)])
+        assertEquals(CubeState.ACTIVE, input[CubePos(1, 0, 0)])
+        assertEquals(CubeState.INACTIVE, input[CubePos(2, 0, 0)])
+        assertEquals(CubeState.INACTIVE, input[CubePos(0, 1, 0)])
+        assertEquals(CubeState.INACTIVE, input[CubePos(1, 1, 0)])
+        assertEquals(CubeState.ACTIVE, input[CubePos(2, 1, 0)])
+        // z
+        assertEquals(CubeState.INACTIVE, input[CubePos(0, 0, 1)])
+        assertEquals(CubeState.INACTIVE, input[CubePos(0, 0, -1)])
+
+        var nextStep = input.convert()
+        println(nextStep)
+        assertEquals(CubeState.ACTIVE, nextStep[CubePos(0, 1, 0)])
+        assertEquals(CubeState.INACTIVE, nextStep[CubePos(1, 1, 0)])
+        assertEquals(CubeState.ACTIVE, nextStep[CubePos(2, 1, 0)])
+        assertEquals(CubeState.INACTIVE, nextStep[CubePos(0, 2, 0)])
+        assertEquals(CubeState.ACTIVE, nextStep[CubePos(1, 2, 0)])
+        assertEquals(CubeState.ACTIVE, nextStep[CubePos(2, 2, 0)])
+        repeat(5) {
+            nextStep = nextStep.convert()
+        }
+        println(nextStep)
+        assertEquals(112, nextStep.activePositions.size)
+    }
+
+
 
     private fun day11Input(): List<List<SeatState>> {
         val input = """
