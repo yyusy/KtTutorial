@@ -27,7 +27,7 @@ fun day17() {
 
 fun List<String>.toCube() = Cube().also { c ->
     this.forEachIndexed { y, l ->
-        l.forEachIndexed { x, ch -> c[CubePos(x, y, 0)] = ch.toCubeState() }
+        l.forEachIndexed { x, ch -> c[CubePos3D(x, y, 0)] = ch.toCubeState() }
     }
 }
 
@@ -44,56 +44,101 @@ enum class CubeState(val code: Char) {
 
 fun Char.toCubeState() = CubeState.values().firstOrNull { it.code == this }!!
 
-data class CubePos(val x: Int, val y: Int, val z: Int)
 
-class Cube {
-    val activePositions = mutableSetOf<CubePos>()
-    private var minPos = CubePos(Int.MAX_VALUE, Int.MAX_VALUE, Int.MAX_VALUE)
-    private var maxPos = CubePos(Int.MIN_VALUE, Int.MIN_VALUE, Int.MIN_VALUE)
+interface ICubePos {
+    fun compose(p: ICubePos?, f: (v1: Int, v2: Int) -> Int): ICubePos
+    fun neighbourgs(): List<ICubePos>
+    fun forEach(to: ICubePos, action: (p: ICubePos) -> Unit)
+}
 
+data class CubePos3D(val x: Int, val y: Int, val z: Int) : ICubePos {
+    override fun compose(p: ICubePos?, f: (v1: Int, v2: Int) -> Int) =
+        p?.let { CubePos3D(f(x, (p as CubePos3D).x), f(y, p.y), f(z, p.z)) } ?: this
 
-    operator fun get(p: CubePos) = if (activePositions.contains(p)) ACTIVE else INACTIVE
-    operator fun set(p: CubePos, s: CubeState) {
-        if (s == ACTIVE) setActive(p)
-    }
+    override fun neighbourgs() = (-1..1).map { CubePos3D(x + it, y, z) }
+        .flatMap { p -> (-1..1).map { with(p) { CubePos3D(x, y + it, z) } } }
+        .flatMap { p -> (-1..1).map { with(p) { CubePos3D(x, y, z + it) } } }
+        .filter { it != this }
+        .toList()
 
-    private fun setActive(p: CubePos) {
-        activePositions.add(p)
-        minPos = CubePos(min(minPos.x, p.x), min(minPos.y, p.y), min(minPos.z, p.z))
-        maxPos = CubePos(max(maxPos.x, p.x), max(maxPos.y, p.y), max(maxPos.z, p.z))
-    }
-
-    override fun toString() = "$activePositions\n" + ((minPos.z..maxPos.z)
-        .joinToString("\n") { z ->
-            "\nz:$z (${minPos.x}:${minPos.y} to ${maxPos.x}:${maxPos.y})\n" + layerToString(z)
-        })
-
-    private fun layerToString(z: Int) = (minPos.y..maxPos.y)
-        .joinToString("\n") { y ->
-            (minPos.x..maxPos.x).joinToString("") { x -> this[CubePos(x, y, z)].toString() }
-        }
-
-    fun convert(): Cube {
-        val ret = Cube()
-        (minPos.z - 1..maxPos.z + 1).forEach { z ->
-            (minPos.y - 1..maxPos.y + 1).forEach { y ->
-                (minPos.x - 1..maxPos.x + 1).forEach { x ->
-                    ret[CubePos(x, y, z)] = convertPosition(CubePos(x, y, z))
+    override fun forEach(to: ICubePos, action: (p: ICubePos) -> Unit) {
+        to as CubePos3D
+        (this.z - 1..to.z + 1).forEach { z ->
+            (this.y - 1..to.y + 1).forEach { y ->
+                (this.x - 1..to.x + 1).forEach { x ->
+                    action(CubePos3D(x, y, z))
                 }
             }
         }
-        return ret
+    }
+}
+
+data class CubePosND(val n: Int, val coord: List<Int> = mutableListOf()) : ICubePos {
+    override fun compose(p: ICubePos?, f: (v1: Int, v2: Int) -> Int): ICubePos {
+        p as CubePosND
+        return (1..n).map { f(coord[it], p.coord[it]) }.toList().let { CubePosND(n, it) }
     }
 
-    private fun enabledNeighbours(position: CubePos): List<CubePos> {
-        return (-1..1).map { with(position) { CubePos(x + it, y, z) } }
-            .flatMap { p -> (-1..1).map { with(p) { CubePos(x, y + it, z) } } }
-            .flatMap { p -> (-1..1).map { with(p) { CubePos(x, y, z + it) } } }
-            .filter { it != position }
-            .filter { activePositions.contains(it) }
+    override fun neighbourgs(): List<ICubePos> {
+        TODO("Not yet implemented")
     }
 
-    private fun convertPosition(position: CubePos) = when (this[position]) {
+    override fun forEach(to: ICubePos, action: (p: ICubePos) -> Unit) {
+        to as CubePosND
+        fun forEachLayer(i: Int, p: List<Int>) {
+            if (i == n) action(CubePosND(n, p))
+            else (coord[i] - 1..to.coord[i] + 1).forEach { forEachLayer(i + 1, p + it) }
+        }
+        forEachLayer(0, emptyList<Int>())
+    }
+}
+
+class CubeND(val n: Int) {
+    private var minPos = CubePosND(n, List(n, { Int.MAX_VALUE }))
+    private var maxPos = CubePosND(n, List(n, { Int.MIN_VALUE }))
+}
+
+class Cube3D {
+    private var minPos : CubePos3D? = null
+    private var maxPos : CubePos3D? = null
+    fun adjustTo(p: ICubePos) {
+        p as CubePos3D
+        minPos = p.compose(minPos, ::min)
+        maxPos = p.compose(minPos, ::max)
+    }
+
+    fun forEach(action: (ICubePos) -> Unit) = minPos!!.forEach(maxPos!!) { action(it) }
+    fun toString(posStr: (ICubePos) -> String) = ((minPos!!.z..maxPos!!.z)
+        .joinToString("\n") { z ->
+            "\nz:$z (${minPos!!.x}:${minPos!!.y} to ${maxPos!!.x}:${maxPos!!.y})\n" + layerToString(z, posStr)
+        })
+
+    private fun layerToString(z: Int, posStr: (ICubePos) -> String) = (minPos!!.y..maxPos!!.y)
+        .joinToString("\n") { y ->
+            (minPos!!.x..maxPos!!.x).joinToString("") { x -> posStr(CubePos3D(x, y, z)) }
+        }
+}
+
+
+class Cube {
+    val activePositions = mutableSetOf<ICubePos>()
+    private var area = Cube3D()
+
+    operator fun get(p: ICubePos) = if (activePositions.contains(p)) ACTIVE else INACTIVE
+    operator fun set(p: ICubePos, s: CubeState) { if (s == ACTIVE) setActive(p) }
+
+    private fun setActive(p: ICubePos) {
+        activePositions.add(p)
+        area.adjustTo(p)
+    }
+
+    override fun toString() = area.toString { this[it].toString() }
+
+    fun convert() = Cube().also { area.forEach { p -> it[p] = convertPosition(p) } }
+
+    private fun enabledNeighbours(position: ICubePos) = position.neighbourgs().filter { activePositions.contains(it) }
+
+    private fun convertPosition(position: ICubePos) = when (this[position]) {
         ACTIVE -> if (enabledNeighbours(position).size in (2..3)) ACTIVE else INACTIVE
         INACTIVE -> if (enabledNeighbours(position).size == 3) ACTIVE else INACTIVE
     }

@@ -3,8 +3,6 @@ import SeatState.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.File
-import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.test.*
 
@@ -772,33 +770,34 @@ internal class KtTutorialTest {
             ###
         """.trimIndent().lines().toCube()
         println(input)
-        assertEquals(CubeState.INACTIVE, input[CubePos(0, 0, 0)])
-        assertEquals(CubeState.ACTIVE, input[CubePos(1, 0, 0)])
-        assertEquals(CubeState.INACTIVE, input[CubePos(2, 0, 0)])
-        assertEquals(CubeState.INACTIVE, input[CubePos(0, 1, 0)])
-        assertEquals(CubeState.INACTIVE, input[CubePos(1, 1, 0)])
-        assertEquals(CubeState.ACTIVE, input[CubePos(2, 1, 0)])
+        assertEquals(CubeState.INACTIVE, input[CubePos3D(0, 0, 0)])
+        assertEquals(CubeState.ACTIVE, input[CubePos3D(1, 0, 0)])
+        assertEquals(CubeState.INACTIVE, input[CubePos3D(2, 0, 0)])
+        assertEquals(CubeState.INACTIVE, input[CubePos3D(0, 1, 0)])
+        assertEquals(CubeState.INACTIVE, input[CubePos3D(1, 1, 0)])
+        assertEquals(CubeState.ACTIVE, input[CubePos3D(2, 1, 0)])
         // z
-        assertEquals(CubeState.INACTIVE, input[CubePos(0, 0, 1)])
-        assertEquals(CubeState.INACTIVE, input[CubePos(0, 0, -1)])
+        assertEquals(CubeState.INACTIVE, input[CubePos3D(0, 0, 1)])
+        assertEquals(CubeState.INACTIVE, input[CubePos3D(0, 0, -1)])
 
         var nextStep = input.convert()
         println(nextStep)
-        assertEquals(CubeState.ACTIVE, nextStep[CubePos(0, 1, 0)])
-        assertEquals(CubeState.INACTIVE, nextStep[CubePos(1, 1, 0)])
-        assertEquals(CubeState.ACTIVE, nextStep[CubePos(2, 1, 0)])
-        assertEquals(CubeState.INACTIVE, nextStep[CubePos(0, 2, 0)])
-        assertEquals(CubeState.ACTIVE, nextStep[CubePos(1, 2, 0)])
-        assertEquals(CubeState.ACTIVE, nextStep[CubePos(2, 2, 0)])
+        assertEquals(CubeState.ACTIVE, nextStep[CubePos3D(0, 1, 0)])
+        assertEquals(CubeState.INACTIVE, nextStep[CubePos3D(1, 1, 0)])
+        assertEquals(CubeState.ACTIVE, nextStep[CubePos3D(2, 1, 0)])
+        assertEquals(CubeState.INACTIVE, nextStep[CubePos3D(0, 2, 0)])
+        assertEquals(CubeState.ACTIVE, nextStep[CubePos3D(1, 2, 0)])
+        assertEquals(CubeState.ACTIVE, nextStep[CubePos3D(2, 2, 0)])
         repeat(5) {
             nextStep = nextStep.convert()
         }
         println(nextStep)
         assertEquals(112, nextStep.activePositions.size)
     }
-
-
-
+    @Test
+    fun day17Part2Test() {
+        //CubeND()
+    }
     private fun day11Input(): List<List<SeatState>> {
         val input = """
                 L.LL.LL.LL
