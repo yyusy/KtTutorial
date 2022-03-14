@@ -572,12 +572,12 @@ internal class KtTutorialTest {
         assertEquals(73, mask.applyToValue(11))
         assertEquals(101, mask.applyToValue(101))
         assertEquals(64, mask.applyToValue(0))
-        assertEquals("7", "mem\\[(\\d+)".toRegex().find("mem[7]")!!.destructured!!.component1())
+        assertEquals("7", "mem\\[(\\d+)".toRegex().find("mem[7]")!!.destructured.component1())
         val instr = input.drop(1)
             .filter { it.isNotBlank() }
             .map { it.split("=").map { it.trim() } }
             .map { (instr, value) ->
-                "mem\\[(\\d+)\\]".toRegex().find(instr)?.destructured!!.component1()!!.toInt() to value.toInt()
+                "mem\\[(\\d+)\\]".toRegex().find(instr)?.destructured!!.component1().toInt() to value.toInt()
             }
         assertEquals(3, instr.size)
         assertEquals((8 to 11), instr[0])
@@ -593,7 +593,7 @@ internal class KtTutorialTest {
 
     @Test
     fun testDay14Part2() {
-        var mask = "mask=000000000000000000000000000000X1001X".toBitmask()
+        val mask = "mask=000000000000000000000000000000X1001X".toBitmask()
         assertNotNull(mask[35])
         assertEquals(false, mask[35]!!.bitVal)
         assertNull(mask[5])
@@ -768,8 +768,17 @@ internal class KtTutorialTest {
             .#.
             ..#
             ###
-        """.trimIndent().lines().toCube()
+        """.trimIndent().lines().toCube3D()
         println(input)
+        var p = CubePos3D(0, 0, 0)
+        p-=1
+        assertEquals(-1, p.x)
+        assertEquals(-1, p.y)
+        assertEquals(-1, p.z)
+        p+=2
+        assertEquals(1, p.x)
+        assertEquals(1, p.y)
+        assertEquals(1, p.z)
         assertEquals(CubeState.INACTIVE, input[CubePos3D(0, 0, 0)])
         assertEquals(CubeState.ACTIVE, input[CubePos3D(1, 0, 0)])
         assertEquals(CubeState.INACTIVE, input[CubePos3D(2, 0, 0)])
@@ -795,9 +804,58 @@ internal class KtTutorialTest {
         assertEquals(112, nextStep.activePositions.size)
     }
     @Test
-    fun day17Part2Test() {
-        //CubeND()
+    fun day17TestND() {
+        val input = """
+            .#.
+            ..#
+            ###
+        """.trimIndent().lines().toCubeND(3)
+        println(input)
+        assertEquals(CubeState.INACTIVE, input[CubePosND(0, 0, 0)])
+        assertEquals(CubeState.ACTIVE, input[CubePosND(1, 0, 0)])
+        assertEquals(CubeState.INACTIVE, input[CubePosND(2, 0, 0)])
+        assertEquals(CubeState.INACTIVE, input[CubePosND(0, 1, 0)])
+        assertEquals(CubeState.INACTIVE, input[CubePosND(1, 1, 0)])
+        assertEquals(CubeState.ACTIVE, input[CubePosND(2, 1, 0)])
+        // z
+        assertEquals(CubeState.INACTIVE, input[CubePosND(0, 0, 1)])
+        assertEquals(CubeState.INACTIVE, input[CubePosND(0, 0, -1)])
+
+        var nextStep = input.convert()
+        println(nextStep)
+        assertEquals(CubeState.ACTIVE, nextStep[CubePosND(0, 1, 0)])
+        assertEquals(CubeState.INACTIVE, nextStep[CubePosND(1, 1, 0)])
+        assertEquals(CubeState.ACTIVE, nextStep[CubePosND(2, 1, 0)])
+        assertEquals(CubeState.INACTIVE, nextStep[CubePosND(0, 2, 0)])
+        assertEquals(CubeState.ACTIVE, nextStep[CubePosND(1, 2, 0)])
+        assertEquals(CubeState.ACTIVE, nextStep[CubePosND(2, 2, 0)])
+        repeat(5) {
+            nextStep = nextStep.convert()
+        }
+        println(nextStep)
+        assertEquals(112, nextStep.activePositions.size)
     }
+
+    @Test
+    fun day17Part2Test() {
+        val input = """
+            .#.
+            ..#
+            ###
+        """.trimIndent().lines().toCubeND(4)
+        println(input)
+
+
+        var nextStep = input.convert()
+        println(nextStep)
+
+        repeat(5) {
+            nextStep = nextStep.convert()
+        }
+        println(nextStep)
+        assertEquals(848, nextStep.activePositions.size)
+    }
+
     private fun day11Input(): List<List<SeatState>> {
         val input = """
                 L.LL.LL.LL
