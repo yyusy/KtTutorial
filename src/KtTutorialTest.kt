@@ -771,11 +771,11 @@ internal class KtTutorialTest {
         """.trimIndent().lines().toCube3D()
         println(input)
         var p = CubePos3D(0, 0, 0)
-        p-=1
+        p -= 1
         assertEquals(-1, p.x)
         assertEquals(-1, p.y)
         assertEquals(-1, p.z)
-        p+=2
+        p += 2
         assertEquals(1, p.x)
         assertEquals(1, p.y)
         assertEquals(1, p.z)
@@ -803,6 +803,7 @@ internal class KtTutorialTest {
         println(nextStep)
         assertEquals(112, nextStep.activePositions.size)
     }
+
     @Test
     fun day17TestND() {
         val input = """
@@ -854,6 +855,33 @@ internal class KtTutorialTest {
         }
         println(nextStep)
         assertEquals(848, nextStep.activePositions.size)
+    }
+
+
+    @Test
+    fun day18Test() {
+        val lex = Regex("""\d+|\+|-|\*|\(|\)""")
+        val input = "2 + 1+ 3 * 7 xx"
+        val x = lex.findAll(input).filter { it.value.isNotBlank() }.map { it.value }.toList()
+        println(x)
+        var e = x.parseExpres()
+        println(e)
+        val firstOp = e.evaluate()
+        assertEquals(42, firstOp)
+        e = "2 + 1+ (3 * 7)".splitToLexems().parseExpres()
+        println(e)
+        assertEquals(24, e.evaluate())
+        assertEquals(71, "1 + 2 * 3 + 4 * 5 + 6".splitToLexems().parseExpres().evaluate())
+        assertEquals(0, "(5+6)".splitToLexems().findOpening(3))
+        assertEquals(-1, "1 + 2 * 3 + 4 * 5 + 6)".splitToLexems().findOpening(11))
+        assertEquals(8, "1 + (2 * 3) + (4 * (5 + 6))".splitToLexems().findOpening(15))
+        assertEquals(11, "1 + (2 * 3) + (4 * (5 + 6))".splitToLexems().findOpening(14))
+        e = "1 + (2 * 3) + (4 * (5 + 6))".splitToLexems().parseExpres()
+        println(e)
+        assertEquals(51, e.evaluate())
+        assertEquals(26, "2 * 3 + (4 * 5)".splitToLexems().parseExpres().evaluate())
+        assertEquals(12240, "5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))".splitToLexems().parseExpres().evaluate())
+        assertEquals(13632, "((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2".splitToLexems().parseExpres().evaluate())
     }
 
     private fun day11Input(): List<List<SeatState>> {

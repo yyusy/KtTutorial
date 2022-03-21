@@ -6,6 +6,7 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
 @OptIn(ExperimentalTime::class)
+@ExperimentalStdlibApi
 fun main() {
     val t = measureTime {
         day17Part2()
@@ -55,8 +56,10 @@ data class CubePosND(val n: Int, val coord: List<Int> = mutableListOf()) : ICube
         } ?: this
     }
 
+
     override fun neighbourgs(margin: Int): List<CubePosND> = buildList {
-        (this@CubePosND - margin).forEach(this@CubePosND + margin) { if (it != this@CubePosND) add(it) }
+        (this@CubePosND - margin)
+            .forEach(this@CubePosND + margin) { if (it != this@CubePosND) add(it) }
     }
 
 
@@ -72,7 +75,7 @@ data class CubePosND(val n: Int, val coord: List<Int> = mutableListOf()) : ICube
     operator fun minus(i: Int) = plus(-i)
 }
 
-class CubeND(val n: Int) : ICube<CubePosND> {
+class CubeND(private val n: Int) : ICube<CubePosND> {
     private var minPos: CubePosND? = null
     private var maxPos: CubePosND? = null
     override fun adjustTo(p: CubePosND) {
