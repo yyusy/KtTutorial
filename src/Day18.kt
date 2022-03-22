@@ -17,7 +17,7 @@ fun day18() {
             .map { it.evaluate() }
             .toList()
     }
-    assertEquals(2442962814, v.sum())
+    assertEquals(3348222486398, v.sum())
 }
 
 fun String.toOperation() = Operation.values().firstOrNull { it.code == this } ?: throw IllegalArgumentException()
@@ -35,7 +35,7 @@ class ConstExpression(val v: Long) : Expression() {
 class BinaryExpression(val leftOp: Expression, val op: Operation, val rightOp: Expression) : Expression() {
     override fun evaluate(): Long {
         val ret = op.apply(leftOp.evaluate(), rightOp.evaluate())
-        println("$leftOp ${op.code} $rightOp = $ret")
+        //println("$leftOp ${op.code} $rightOp = $ret")
         return ret
     }
 
@@ -61,14 +61,13 @@ enum class Operation(val code: String) {
 
 fun List<String>.findOpening(startPos: Int): Int {
     var p = 1
-    var i = startPos
-    while (i >= 0) {
-        if (this[i] == "(") p--
-        if (this[i] == ")") p++
-        if (p == 0) break
-        i--
-    }
-    return i
+    return (startPos downTo 0).firstOrNull {
+        when (this[it]) {
+            "(" -> p--
+            ")" -> p++
+        }
+        p == 0
+    } ?: -1
 }
 
 fun List<String>.parseExpres(): Expression {

@@ -868,6 +868,7 @@ internal class KtTutorialTest {
         println(e)
         val firstOp = e.evaluate()
         assertEquals(42, firstOp)
+        assertEquals(4, "2 + 1+ (3 * 7)".splitToLexems().findOpening(7))
         e = "2 + 1+ (3 * 7)".splitToLexems().parseExpres()
         println(e)
         assertEquals(24, e.evaluate())
