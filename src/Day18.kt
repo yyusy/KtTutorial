@@ -20,14 +20,19 @@ fun day18() {
     assertEquals(3348222486398, v.sum())
 }
 
-fun String.toOperation() = Operation.values().firstOrNull { it.code == this } ?: throw IllegalArgumentException()
+fun String.toOperation() =
+    Operation.values().firstOrNull { it.code == this } ?: throw IllegalArgumentException("Illegal operation '$this'")
+
+fun String.toOperationOrNull() =
+    Operation.values().firstOrNull { it.code == this }
+
 fun String.isLong() = this.toLongOrNull() != null
 
 sealed class Expression {
     abstract fun evaluate(): Long
 }
 
-class ConstExpression(val v: Long) : Expression() {
+class ConstLongExpression(val v: Long) : Expression() {
     override fun evaluate() = v
     override fun toString() = v.toString()
 }
@@ -76,7 +81,7 @@ fun List<String>.parseExpres(): Expression {
     fun parseOperand(input: List<String>): Expression {
         return when {
             input.last().isLong() -> {
-                opPos -= 1; ConstExpression(input.last().toLong())
+                opPos -= 1; ConstLongExpression(input.last().toLong())
             }
             input.last() == ")" -> {
                 val i = input.findOpening(input.lastIndex - 1)

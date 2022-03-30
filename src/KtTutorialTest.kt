@@ -884,6 +884,15 @@ internal class KtTutorialTest {
         assertEquals(12240, "5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))".splitToLexems().parseExpres().evaluate())
         assertEquals(13632, "((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2".splitToLexems().parseExpres().evaluate())
     }
+    @Test
+    fun day18Part2Test() {
+        assertEquals(24, Parser("2 + 1 + (3 * 7)".splitToLexems()).parse().evaluate())
+        assertEquals(51, Parser("1 + (2 * 3) + (4 * (5 + 6))".splitToLexems()).parse().evaluate())
+        assertEquals(46, Parser("2 * 3 + (4 * 5)".splitToLexems()).parse().evaluate())
+        assertEquals(1445, Parser("5 + (8 * 3 + 9 + 3 * 4 * 3)".splitToLexems()).parse().evaluate())
+        assertEquals(669060, Parser("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))".splitToLexems()).parse().evaluate())
+        assertEquals(23340, Parser("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2".splitToLexems()).parse().evaluate())
+    }
 
     private fun day11Input(): List<List<SeatState>> {
         val input = """
