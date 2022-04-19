@@ -3,6 +3,7 @@ import SeatState.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.File
+import javax.xml.validation.Validator
 import kotlin.math.roundToInt
 import kotlin.test.*
 
@@ -884,6 +885,7 @@ internal class KtTutorialTest {
         assertEquals(12240, "5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))".splitToLexems().parseExpres().evaluate())
         assertEquals(13632, "((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2".splitToLexems().parseExpres().evaluate())
     }
+
     @Test
     fun day18Part2Test() {
         assertEquals(24, Parser("2 + 1 + (3 * 7)".splitToLexems()).parse().evaluate())
@@ -891,7 +893,69 @@ internal class KtTutorialTest {
         assertEquals(46, Parser("2 * 3 + (4 * 5)".splitToLexems()).parse().evaluate())
         assertEquals(1445, Parser("5 + (8 * 3 + 9 + 3 * 4 * 3)".splitToLexems()).parse().evaluate())
         assertEquals(669060, Parser("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))".splitToLexems()).parse().evaluate())
-        assertEquals(23340, Parser("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2".splitToLexems()).parse().evaluate())
+        assertEquals(
+            23340,
+            Parser("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2".splitToLexems()).parse().evaluate()
+        )
+    }
+
+    sealed class RuleValidator(val id : Int)
+    {
+        abstract fun findValid(input: String, start: Int): IntRange?
+
+        class UnknownRuleValidator(id : Int) : RuleValidator(id) {
+            override fun findValid(input: String, start: Int): IntRange? {
+                throw IllegalStateException("Unknown rule $id")
+            }
+        }
+        class ConstValidator(id: Int, val c : Char) : RuleValidator(id) {
+            override fun findValid(input: String, start: Int) = if (c == input.first()) IntRange(start, start + 1) else null
+        }
+        class CompositeValidator(id : Int, val validators : List<RuleValidator>) : RuleValidator(id) {
+            override fun findValid(input: String, start: Int): IntRange? {
+                var end = start
+                for(i in validators) {
+                   val r = i.findValid(input, end)
+                    if (r == null) return null
+                    end = r.endInclusive + 1
+                }
+                return IntRange(start, end)
+            }
+        }
+    }
+    fun String.toRuleValidator(id : Int , v : MutableMap<Int, RuleValidator>) : RuleValidator {
+        if (Regex("\\d+\\s*").matches(this)) {
+            val l = this.split(" ").map { it.trim() }
+                .filter { it.isNotBlank() }
+                .mapNotNull {
+                    it.toIntOrNull()?.let { id ->
+                        v.getOrPut(id) { RuleValidator.UnknownRuleValidator(id) }
+                    }
+                }
+            v[id ] = RuleValidator.CompositeValidator(id, l)
+
+        } else if (Regex("\"\\w+\"").matches(this)) {
+            val c = this.replace("\"", "").trim().first()
+
+            v[id] = RuleValidator.ConstValidator(id, c)
+        } else {
+            throw IllegalArgumentException("Unknown rule : $this")
+        }
+        return v[id]!!
+    }
+    @Test
+    fun day19Test() {
+        val rules = mutableMapOf<Int, RuleValidator>()
+        val input = """
+            0: 1 2
+            1: "a"
+            2: 1 3 | 3 1
+            3: "b"
+            """.trimIndent().lineSequence()
+            .map { it.split(":").map { it.trim() }.take(2).let { Pair(it[0].toInt(), it[1]) } }
+            .map { it.second.toRuleValidator(it.first, rules) }
+            .forEach { println(it.id) }
+        assertEquals(4, rules.size)
     }
 
     private fun day11Input(): List<List<SeatState>> {
