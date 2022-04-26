@@ -3,7 +3,6 @@ import SeatState.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.File
-import javax.xml.validation.Validator
 import kotlin.math.roundToInt
 import kotlin.test.*
 
@@ -160,7 +159,7 @@ internal class KtTutorialTest {
         val fromBag = "shiny gold"
         val countPaths = rules.filter { it.key != fromBag }.count {
             val path = g.findPath(g[fromBag], g[it.key], true)
-            println("$fromBag -> ${it.key} : ${path}")
+            println("$fromBag -> ${it.key} : $path")
             path.isNotEmpty()
         }.also { println(it) }
         assertEquals(4, countPaths)
@@ -899,63 +898,56 @@ internal class KtTutorialTest {
         )
     }
 
-    sealed class RuleValidator(val id : Int)
-    {
-        abstract fun findValid(input: String, start: Int): IntRange?
-
-        class UnknownRuleValidator(id : Int) : RuleValidator(id) {
-            override fun findValid(input: String, start: Int): IntRange? {
-                throw IllegalStateException("Unknown rule $id")
-            }
-        }
-        class ConstValidator(id: Int, val c : Char) : RuleValidator(id) {
-            override fun findValid(input: String, start: Int) = if (c == input.first()) IntRange(start, start + 1) else null
-        }
-        class CompositeValidator(id : Int, val validators : List<RuleValidator>) : RuleValidator(id) {
-            override fun findValid(input: String, start: Int): IntRange? {
-                var end = start
-                for(i in validators) {
-                   val r = i.findValid(input, end)
-                    if (r == null) return null
-                    end = r.endInclusive + 1
-                }
-                return IntRange(start, end)
-            }
-        }
-    }
-    fun String.toRuleValidator(id : Int , v : MutableMap<Int, RuleValidator>) : RuleValidator {
-        if (Regex("\\d+\\s*").matches(this)) {
-            val l = this.split(" ").map { it.trim() }
-                .filter { it.isNotBlank() }
-                .mapNotNull {
-                    it.toIntOrNull()?.let { id ->
-                        v.getOrPut(id) { RuleValidator.UnknownRuleValidator(id) }
-                    }
-                }
-            v[id ] = RuleValidator.CompositeValidator(id, l)
-
-        } else if (Regex("\"\\w+\"").matches(this)) {
-            val c = this.replace("\"", "").trim().first()
-
-            v[id] = RuleValidator.ConstValidator(id, c)
-        } else {
-            throw IllegalArgumentException("Unknown rule : $this")
-        }
-        return v[id]!!
-    }
     @Test
     fun day19Test() {
-        val rules = mutableMapOf<Int, RuleValidator>()
+        val registry = RulesRegistry()
         val input = """
             0: 1 2
             1: "a"
             2: 1 3 | 3 1
             3: "b"
+            x: 1 3
             """.trimIndent().lineSequence()
-            .map { it.split(":").map { it.trim() }.take(2).let { Pair(it[0].toInt(), it[1]) } }
-            .map { it.second.toRuleValidator(it.first, rules) }
-            .forEach { println(it.id) }
-        assertEquals(4, rules.size)
+            .map { it.split(":").map { it.trim() }.take(2).let { Pair(it[0], it[1]) } }
+            .map { registry.parseToRuleValidator(it.first, it.second) }
+            .forEach { println(it) }
+        println(registry)
+        assertEquals(7, registry.v.size)
+        val rule0 = registry["0"]
+        assertIs<RuleValidator.CompositeValidator>(rule0)
+        assertEquals(2, rule0.ruleIds.size)
+        assertIs<RuleValidator.ConstValidator>(registry[rule0.ruleIds[0]])
+        assertIs<RuleValidator.OrValidator>(registry[rule0.ruleIds[1]])
+        assertEquals(0..1, registry["1"].findValid("a123", 0))
+        assertEquals(0..1, registry["3"].findValid("b", 0))
+        assertEquals(1..2, registry["3"].findValid("zb", 1))
+        assertEquals(0..2, registry["x"].findValid("ab", 0))
+        assertEquals(0..2, registry["2"].findValid("ab", 0))
+        assertEquals(0..3, registry["0"].findValid("aab", 0))
+        assertEquals(0..3, registry["0"].findValid("aba", 0))
+        assertEquals(true, registry["0"].matches("aba", 0))
+        assertNull(registry["0"].findValid("ab", 0))
+        assertEquals(false, registry["0"].matches("ab", 0))
+        val r2 = RulesRegistry()
+        """
+        0: 4 1 5
+        1: 2 3 | 3 2
+        2: 4 4 | 5 5
+        3: 4 5 | 5 4
+        4: "a"
+        5: "b"    
+        """.trimIndent()
+            .lineSequence()
+            .map{ it.split(":") }
+            .map { (k,v) -> r2.parseToRuleValidator(k.trim(), v.trim())  }
+            .forEach { println(it) }
+        println(r2)
+        assertEquals(true, r2["0"].matches("ababbb"))
+        assertEquals(false, r2["0"].matches("bababa"))
+        assertEquals(true, r2["0"].matches("abbbab"))
+        assertEquals(false, r2["0"].matches("aaabbb"))
+        assertEquals(false, r2["0"].matches("aaaabbb"))
+
     }
 
     private fun day11Input(): List<List<SeatState>> {
