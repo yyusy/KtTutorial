@@ -29,5 +29,7 @@ class TestAllDays {
         day17Part2()
         day18()
         day18Part2()
+        day19()
+        day19Part2()
     }
 }

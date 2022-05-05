@@ -16,7 +16,7 @@ fun day19() {
     File("Day19Input.txt").useLines { l ->
         l.takeWhile { it.isNotBlank() }
             .map { it.split(":") }
-            .map { (k, v) -> r2.parseToRuleValidator(k.trim(), v.trim()) }
+            .map { (k, v) -> r2.importRule(k.trim(), v.trim()) }
             .forEach { ; }
     }
     println(r2)
@@ -36,7 +36,7 @@ data class RulesRegistry(val v: MutableMap<String, RuleValidator> = mutableMapOf
     }
 
     operator fun invoke() = v
-    fun parseToRuleValidator(id: String, ruleStr: String): RuleValidator =
+    fun importRule(id: String, ruleStr: String): RuleValidator =
         if (Regex("""((\s*\d+\s*)+(\|)?)+""").matches(ruleStr)) {
             val x = ruleStr.split("|")
             if (x.size > 1) {
@@ -64,11 +64,11 @@ sealed class RuleValidator(val id: String, val registry: RulesRegistry) {
         else registry[id] = this
     }
 
-    fun matches(input: String, start: Int = 0): Boolean = (findValid(input, start)?.endInclusive == input.length)
-    abstract fun findValid(input: String, start: Int): IntRange?
+    fun matches(input: String): Boolean = (findValid(input, 0).any { it.endInclusive == input.length })
+    abstract fun findValid(input: String, start: Int): List<IntRange>
 
     class UnknownRuleValidator(id: String, registry: RulesRegistry) : RuleValidator(id, registry) {
-        override fun findValid(input: String, start: Int): IntRange? {
+        override fun findValid(input: String, start: Int): List<IntRange> {
             throw IllegalStateException("Unknown rule $id")
         }
 
@@ -78,7 +78,7 @@ sealed class RuleValidator(val id: String, val registry: RulesRegistry) {
     class ConstValidator(id: String, private val c: Char, registry: RulesRegistry) : RuleValidator(id, registry) {
 
         override fun findValid(input: String, start: Int) =
-            if (start in input.indices && c == input[start]) IntRange(start, start + 1) else null
+            if (start in input.indices && c == input[start]) listOf(IntRange(start, start + 1)) else emptyList()
 
         override fun toString() = "$id:\"$c\""
     }
@@ -87,21 +87,25 @@ sealed class RuleValidator(val id: String, val registry: RulesRegistry) {
         RuleValidator(id, registry) {
 
         override fun findValid(input: String, start: Int) =
-            ruleIds.map { registry[it] }.firstNotNullOfOrNull { v -> v.findValid(input, start) }
+            ruleIds.map { registry[it] }
+                .map { v -> v.findValid(input, start) }
+                .flatten()
 
-        override fun toString() = "$id:or$ruleIds"
+        override fun toString() = "$id:or(${ruleIds.joinToString { registry[it].toString() }})"
     }
 
     class CompositeValidator(id: String, val ruleIds: List<String>, registry: RulesRegistry) :
         RuleValidator(id, registry) {
 
-        override fun findValid(input: String, start: Int): IntRange? {
-            if (start !in input.indices ) return null
-            var end = start
+        override fun findValid(input: String, start: Int): List<IntRange> {
+            if (start !in input.indices) return emptyList()
+            var endList = listOf(start)
             for (id in ruleIds) {
-                end = registry[id].findValid(input, end)?.endInclusive ?: return null
+                endList = endList.map { s -> registry[id].findValid(input, s) }.flatten().map { it.last }
+                if (endList.isEmpty()) return emptyList()
             }
-            return IntRange(start, end)
+            //println("Found : $this at $start..$endList")
+            return endList.map { start..it }
         }
 
         override fun toString() = "$id:seq$ruleIds"

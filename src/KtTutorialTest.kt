@@ -367,8 +367,8 @@ internal class KtTutorialTest {
         println()
         step1.println()
         assertEquals(day11Step1(), step1)
-        val step2 = step1.mapIndexed() { i, it ->
-            it.mapIndexed { j, it -> step1.convertPosition(i..j) }
+        val step2 = step1.mapIndexed() { i, v ->
+            v.mapIndexed { j, it -> step1.convertPosition(i..j) }
         }
         println()
         step2.println()
@@ -901,7 +901,7 @@ internal class KtTutorialTest {
     @Test
     fun day19Test() {
         val registry = RulesRegistry()
-        val input = """
+        """
             0: 1 2
             1: "a"
             2: 1 3 | 3 1
@@ -909,7 +909,7 @@ internal class KtTutorialTest {
             x: 1 3
             """.trimIndent().lineSequence()
             .map { it.split(":").map { it.trim() }.take(2).let { Pair(it[0], it[1]) } }
-            .map { registry.parseToRuleValidator(it.first, it.second) }
+            .map { registry.importRule(it.first, it.second) }
             .forEach { println(it) }
         println(registry)
         assertEquals(7, registry.v.size)
@@ -918,16 +918,16 @@ internal class KtTutorialTest {
         assertEquals(2, rule0.ruleIds.size)
         assertIs<RuleValidator.ConstValidator>(registry[rule0.ruleIds[0]])
         assertIs<RuleValidator.OrValidator>(registry[rule0.ruleIds[1]])
-        assertEquals(0..1, registry["1"].findValid("a123", 0))
-        assertEquals(0..1, registry["3"].findValid("b", 0))
-        assertEquals(1..2, registry["3"].findValid("zb", 1))
-        assertEquals(0..2, registry["x"].findValid("ab", 0))
-        assertEquals(0..2, registry["2"].findValid("ab", 0))
-        assertEquals(0..3, registry["0"].findValid("aab", 0))
-        assertEquals(0..3, registry["0"].findValid("aba", 0))
-        assertEquals(true, registry["0"].matches("aba", 0))
-        assertNull(registry["0"].findValid("ab", 0))
-        assertEquals(false, registry["0"].matches("ab", 0))
+        assertEquals(0..1, registry["1"].findValid("a123", 0)[0])
+        assertEquals(0..1, registry["3"].findValid("b", 0)[0])
+        assertEquals(1..2, registry["3"].findValid("zb", 1)[0])
+        assertEquals(0..2, registry["x"].findValid("ab", 0)[0])
+        assertEquals(0..2, registry["2"].findValid("ab", 0)[0])
+        assertEquals(0..3, registry["0"].findValid("aab", 0)[0])
+        assertEquals(0..3, registry["0"].findValid("aba", 0)[0])
+        assertEquals(true, registry["0"].matches("aba"))
+        assertTrue(registry["0"].findValid("ab", 0).isEmpty())
+        assertEquals(false, registry["0"].matches("ab"))
         val r2 = RulesRegistry()
         """
         0: 4 1 5
@@ -938,8 +938,8 @@ internal class KtTutorialTest {
         5: "b"    
         """.trimIndent()
             .lineSequence()
-            .map{ it.split(":") }
-            .map { (k,v) -> r2.parseToRuleValidator(k.trim(), v.trim())  }
+            .map { it.split(":") }
+            .map { (k, v) -> r2.importRule(k.trim(), v.trim()) }
             .forEach { println(it) }
         println(r2)
         assertEquals(true, r2["0"].matches("ababbb"))
@@ -947,7 +947,6 @@ internal class KtTutorialTest {
         assertEquals(true, r2["0"].matches("abbbab"))
         assertEquals(false, r2["0"].matches("aaabbb"))
         assertEquals(false, r2["0"].matches("aaaabbb"))
-
     }
 
     private fun day11Input(): List<List<SeatState>> {
@@ -964,6 +963,74 @@ internal class KtTutorialTest {
                 L.LLLLL.LL
             """.trimIndent().lines().map { it.mapNotNull { it.toSeatState() } }
         return input
+    }
+
+    @Test
+    fun day19Part2Test1() {
+        val registry = RulesRegistry()
+        """
+            1: "a"
+            2: "b"
+            3: 1 2 | 1 3 2                
+            4: 1 2 | 1 2 4 
+        """
+            .trimIndent().lineSequence()
+            .map { it.split(":").map { it.trim() } }
+            .map { (k, v) -> registry.importRule(k, v) }
+            .forEach { ; }
+        println(registry)
+        assertEquals(true, registry["3"].matches("ab"))
+        assertEquals(true, registry["3"].matches("aaaabbbb"))
+        assertEquals(true, registry["4"].matches("ababababab"))
+    }
+
+    @Test
+    fun day19Part2Test() {
+        val registry = RulesRegistry()
+        """
+            42: 9 14 | 10 1
+            9: 14 27 | 1 26
+            10: 23 14 | 28 1
+            1: "a"            
+            11: 42 31 | 42 11 31
+            5: 1 14 | 15 1
+            19: 14 1 | 14 14
+            12: 24 14 | 19 1
+            16: 15 1 | 14 14
+            31: 14 17 | 1 13
+            6: 14 14 | 1 14
+            2: 1 24 | 14 4
+            0: 8 11
+            13: 14 3 | 1 12
+            15: 1 | 14
+            17: 14 2 | 1 7
+            23: 25 1 | 22 14
+            28: 16 1
+            4: 1 1
+            20: 14 14 | 1 15
+            3: 5 14 | 16 1
+            27: 1 6 | 14 18
+            14: "b"
+            21: 14 1 | 1 14
+            25: 1 1 | 1 14
+            22: 14 14
+            8: 42 | 42 8 
+            26: 14 22 | 1 20
+            18: 15 15
+            7: 14 5 | 1 21
+            24: 14 1
+            """.trimIndent().lineSequence()
+            .map { it.split(":").map { it.trim() } }
+            .map { (k, v) -> registry.importRule(k, v) }
+            .forEach { ; }
+        println(registry)
+        assertEquals(true, registry["0"].matches("bbabbbbaabaabba"))
+        assertEquals(true, registry["0"].matches("aaaaabbaabaaaaababaa"))
+        assertEquals(true, registry["0"].matches("babbbbaabbbbbabbbbbbaabaaabaaa"))
+        assertEquals(true, registry["0"].matches("bbbbbbbaaaabbbbaaabbabaaa"))
+        assertEquals(true, registry["0"].matches("bbbababbbbaaaaaaaabbababaaababaabab"))
+        assertEquals(true, registry["0"].matches("abbbbabbbbaaaababbbbbbaaaababb"))
+        assertEquals(true, registry["0"].matches("aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba"))
     }
 
     private fun day11Step1(): List<List<SeatState>> {
