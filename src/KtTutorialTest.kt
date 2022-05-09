@@ -1033,6 +1033,71 @@ internal class KtTutorialTest {
         assertEquals(true, registry["0"].matches("aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba"))
     }
 
+    data class Tile(
+        val id: String,
+        val width : Int,
+        val height : Int,
+        val left: MutableSet<Int> = mutableSetOf(),
+        val right: MutableSet<Int> = mutableSetOf(),
+        val top: MutableSet<Int> = mutableSetOf(),
+        val bottom: MutableSet<Int> = mutableSetOf(),
+    ) {
+        private fun toChar(values : Set<Int>, pos : Int) = if (values.contains(pos)) '#' else '.'
+        override fun toString(): String {
+            val ret = StringBuffer ("Tile : $id\n")
+            (0..width-1).map { toChar(top,it) }.joinTo(ret, "")
+            ret.append("\n")
+            (1..(height-2))
+                .map { ln -> toChar(left, ln) + " ".repeat(width-2) + toChar(right, ln) }
+                .joinTo(ret, "\n")
+            ret.append("\n")
+            (0..width-1).map { toChar(bottom,it) }.joinTo(ret, "")
+            return ret.toString()
+        }
+    }
+    fun List<String>.toTile(id : String) : Tile {
+        val w = this[0].length
+        val ret = Tile (id, w, this.size)
+        for((i, l) in this.withIndex()){
+            if (i == 0) l.mapIndexed { i, v -> if (v == '#') ret.top.add(i) }
+            if (i == this.lastIndex) l.mapIndexed { i, v -> if (v == '#') ret.bottom.add(i) }
+            if (l[0] == '#') ret.left.add(i)
+            if (l[w-1] == '#') ret.right.add(i)
+
+        }
+        return ret
+    }
+    @Test
+    fun testDay20() {
+        val input = """
+             Tile 2311:
+             ..##.#..#.
+             ##..#.....
+             #...##..#.
+             ####.#...#
+             ##.##.###.
+             ##...#.###
+             .#.#.#..##
+             ..#....#..
+             ###...#.#.
+             ..###..###
+         """.trimIndent()
+            .lines()
+        var tileId : String? = null
+        val tile = mutableListOf <String>()
+        for (i in input) {
+            if (i.startsWith("Tile"))
+                tileId = Regex("Tile (\\d+):").matchEntire(i)!!.destructured.component1()
+            else if (tileId != null && i.isNotBlank()) tile.add(i)
+        }
+        val t = tile.toTile(tileId!!)
+        println(t)
+        assertEquals(4, t.top.size)
+        assertEquals(4, t.right.size)
+        assertEquals(6, t.bottom.size)
+        assertEquals(6, t.left.size)
+    }
+
     private fun day11Step1(): List<List<SeatState>> {
         val input = """
                 #.##.##.##
