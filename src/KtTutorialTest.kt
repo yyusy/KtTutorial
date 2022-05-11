@@ -1032,41 +1032,90 @@ internal class KtTutorialTest {
         assertEquals(true, registry["0"].matches("abbbbabbbbaaaababbbbbbaaaababb"))
         assertEquals(true, registry["0"].matches("aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba"))
     }
-
+    enum class Side {
+        Top, Bottom, Left, Right
+    }
     data class Tile(
-        val id: String,
-        val width : Int,
-        val height : Int,
+        val id: Int,
+        val width: Int,
+        val height: Int,
         val left: MutableSet<Int> = mutableSetOf(),
         val right: MutableSet<Int> = mutableSetOf(),
         val top: MutableSet<Int> = mutableSetOf(),
         val bottom: MutableSet<Int> = mutableSetOf(),
     ) {
-        private fun toChar(values : Set<Int>, pos : Int) = if (values.contains(pos)) '#' else '.'
+        fun isEnabled(x: Int, y:Int)  {
+
+        }
+
+        fun flipV() = Tile(
+            id, width, height,
+            left.map { height - 1 - it }.toMutableSet(),
+            right.map { height - 1 - it }.toMutableSet(),
+            bottom,
+            top
+        )
+        fun  matchSides(another : Tile ) : List<Pair<Side, Side>> {
+            val ret = mutableListOf<Pair<Side, Side>>()
+            if (this.width == another.width) {
+
+            }
+            return ret
+        }
+        fun rotateRight(n: Int) {
+            val ret =
+                when (n % 4) {
+                    0 -> this
+                    1 -> Tile(id, height, width,
+                        right = top,
+                        left = bottom,
+                        top = left.map { height -1 - it }.toMutableSet(),
+                        bottom = right.map { height -1 -it }.toMutableSet()
+                    )
+                    2 -> Tile(id, width, height,
+                        right = left.map { height -1 - it }.toMutableSet(),
+                        left = right.map { height -1 -it }.toMutableSet(),
+                        top = bottom.map { width -1 - it }.toMutableSet(),
+                        bottom = top.map { width -1 -it }.toMutableSet()
+                    )
+                    3 -> Tile(id, height, width,
+                        right = bottom.map { width -1 - it }.toMutableSet(),
+                        left = top.map { width -1 -it }.toMutableSet(),
+                        top = right,
+                        bottom = left
+                    )
+                    else -> throw IllegalStateException("Kotlin case exhaust failing")
+                }
+
+        }
+
+        private fun toChar(values: Set<Int>, pos: Int) = if (values.contains(pos)) '#' else '.'
         override fun toString(): String {
-            val ret = StringBuffer ("Tile : $id\n")
-            (0..width-1).map { toChar(top,it) }.joinTo(ret, "")
+            val ret = StringBuffer("Tile : $id (${width}x$height)\n")
+            (0..width - 1).map { toChar(top, it) }.joinTo(ret, "")
             ret.append("\n")
-            (1..(height-2))
-                .map { ln -> toChar(left, ln) + " ".repeat(width-2) + toChar(right, ln) }
+            (1..(height - 2))
+                .map { ln -> toChar(left, ln) + " ".repeat(width - 2) + toChar(right, ln) }
                 .joinTo(ret, "\n")
             ret.append("\n")
-            (0..width-1).map { toChar(bottom,it) }.joinTo(ret, "")
+            (0..width - 1).map { toChar(bottom, it) }.joinTo(ret, "")
             return ret.toString()
         }
     }
-    fun List<String>.toTile(id : String) : Tile {
+
+    fun List<String>.toTile(id: Int): Tile {
         val w = this[0].length
-        val ret = Tile (id, w, this.size)
-        for((i, l) in this.withIndex()){
+        val ret = Tile(id, w, this.size)
+        for ((i, l) in this.withIndex()) {
             if (i == 0) l.mapIndexed { i, v -> if (v == '#') ret.top.add(i) }
             if (i == this.lastIndex) l.mapIndexed { i, v -> if (v == '#') ret.bottom.add(i) }
             if (l[0] == '#') ret.left.add(i)
-            if (l[w-1] == '#') ret.right.add(i)
+            if (l[w - 1] == '#') ret.right.add(i)
 
         }
         return ret
     }
+
     @Test
     fun testDay20() {
         val input = """
@@ -1083,19 +1132,27 @@ internal class KtTutorialTest {
              ..###..###
          """.trimIndent()
             .lines()
-        var tileId : String? = null
-        val tile = mutableListOf <String>()
+        var tileId: Int? = null
+        val tile = mutableListOf<String>()
         for (i in input) {
             if (i.startsWith("Tile"))
-                tileId = Regex("Tile (\\d+):").matchEntire(i)!!.destructured.component1()
+                tileId = Regex("Tile (\\d+):").matchEntire(i)!!.destructured.component1().toInt()
             else if (tileId != null && i.isNotBlank()) tile.add(i)
         }
-        val t = tile.toTile(tileId!!)
+        var t = tile.toTile(tileId!!)
         println(t)
         assertEquals(4, t.top.size)
         assertEquals(4, t.right.size)
         assertEquals(6, t.bottom.size)
         assertEquals(6, t.left.size)
+        val tf = t.flipV()
+        assertEquals(6, tf.top.size)
+        assertEquals(4, tf.right.size)
+        assertEquals(4, tf.bottom.size)
+        assertEquals(6, tf.left.size)
+        println("Flipped : $tf")
+        assertNotEquals(t, tf)
+        t.matchSides(tf)
     }
 
     private fun day11Step1(): List<List<SeatState>> {
